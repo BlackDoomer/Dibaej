@@ -1,0 +1,80 @@
+object TableForm: TTableForm
+  Left = 365
+  Height = 320
+  Top = 220
+  Width = 480
+  ClientHeight = 320
+  ClientWidth = 480
+  Constraints.MinHeight = 320
+  Constraints.MinWidth = 480
+  Position = poMainFormCenter
+  ShowInTaskBar = stNever
+  LCLVersion = '1.2.6.0'
+  Visible = True
+  object DBGrid: TDBGrid
+    Left = 8
+    Height = 264
+    Top = 8
+    Width = 464
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Color = clWindow
+    Columns = <>
+    DataSource = DataSource
+    Flat = True
+    Options = [dgEditing, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgAlwaysShowSelection, dgConfirmDelete, dgHeaderHotTracking, dgAutoSizeColumns, dgTruncCellHints, dgRowHighlight, dgThumbTracking]
+    OptionsExtra = [dgeAutoColumns]
+    TabOrder = 0
+    TitleStyle = tsStandard
+  end
+  object RefreshBtn: TButton
+    Left = 384
+    Height = 25
+    Top = 280
+    Width = 75
+    Anchors = [akRight, akBottom]
+    Caption = 'Refresh'
+    OnClick = RefreshBtnClick
+    TabOrder = 1
+  end
+  object FilterEdit: TEdit
+    Left = 16
+    Height = 21
+    Top = 282
+    Width = 328
+    Anchors = [akLeft, akRight, akBottom]
+    OnClick = FilterEditClick
+    ReadOnly = True
+    TabOrder = 2
+    Text = 'Enter filter expression here...'
+  end
+  object ApplyBtn: TButton
+    Left = 351
+    Height = 25
+    Top = 280
+    Width = 25
+    Anchors = [akRight, akBottom]
+    Caption = '#'
+    Enabled = False
+    OnClick = ApplyBtnClick
+    TabOrder = 3
+  end
+  object SQLTransaction: TSQLTransaction
+    Active = False
+    Action = caNone
+    left = 48
+    top = 64
+  end
+  object SQLQuery: TSQLQuery
+    FieldDefs = <>
+    Transaction = SQLTransaction
+    Params = <>
+    UpdateMode = upWhereChanged
+    left = 120
+    top = 64
+  end
+  object DataSource: TDataSource
+    DataSet = SQLQuery
+    left = 184
+    top = 64
+  end
+end

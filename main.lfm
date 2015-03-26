@@ -1,0 +1,63 @@
+object MainForm: TMainForm
+  Left = 255
+  Height = 240
+  Top = 259
+  Width = 320
+  HorzScrollBar.Page = 150
+  HorzScrollBar.Range = 150
+  VertScrollBar.Page = 194
+  VertScrollBar.Range = 194
+  ClientHeight = 220
+  ClientWidth = 320
+  Constraints.MinHeight = 240
+  Constraints.MinWidth = 320
+  Menu = MainMenu
+  OnCreate = FormCreate
+  Position = poDesktopCenter
+  LCLVersion = '1.2.6.0'
+  object LogMemo: TMemo
+    Left = 8
+    Height = 200
+    Top = 8
+    Width = 304
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Enabled = False
+    Lines.Strings = (
+      'No log messages yet...'
+    )
+    ReadOnly = True
+    ScrollBars = ssAutoBoth
+    TabOrder = 0
+  end
+  object MainMenu: TMainMenu
+    left = 240
+    top = 16
+    object TablesItem: TMenuItem
+      Caption = 'Tables'
+    end
+    object AboutItem: TMenuItem
+      Caption = 'About'
+      OnClick = AboutItemClick
+    end
+    object ConnectItem: TMenuItem
+      Caption = 'Connect'
+      RightJustify = True
+      OnClick = ConnectItemClick
+    end
+  end
+  object IBConnection: TIBConnection
+    Connected = False
+    LoginPrompt = False
+    AfterConnect = IBConnectionAfterConnect
+    AfterDisconnect = IBConnectionAfterDisconnect
+    BeforeConnect = IBConnectionBeforeConnect
+    DatabaseName = 'timetable.fdb'
+    KeepConnection = True
+    Password = 'masterkey'
+    UserName = 'SYSDBA'
+    OnLog = IBConnectionLog
+    LogEvents = []
+    left = 240
+    top = 152
+  end
+end
