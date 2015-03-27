@@ -9,7 +9,7 @@ uses
   SysUtils, Classes,
   Menus, Forms, Controls, Dialogs, StdCtrls,
   SQLdb, IBConnection,
-  tables;
+  tables, f_table;
 
 type
   
@@ -78,8 +78,11 @@ begin
     TablesItem.Add( item );
   end;
 
+  SetLength( TableForm, Length(RegTable) );
   IBConnection.Connected := True;
 end;
+
+{ INTERFACE EVENTS =========================================================== }
 
 procedure TMainForm.ConnectItemClick( Sender: TObject );
 begin
@@ -106,9 +109,12 @@ end;
 
 //callback for dynamically registering table items in their menu
 procedure TMainForm.TableItemClick( Sender: TObject );
+var
+  Index: Integer;
 begin
-  { TODO 2 : Think about proper way to link menu items and tables, current is ugly }
-  RegTable[ ( Sender as TMenuItem ).Tag ].Show( Self.IBConnection );
+  Index := ( Sender as TMenuItem ).Tag;
+  if ShowTableForm( Index, RegTable[Index].Caption, IBConnection ) then
+    with TableForm[Index] do RegTable[Index].Fetch( DBGrid );
 end;
 
 { DATABASE CONNECTION EVENTS ================================================= }

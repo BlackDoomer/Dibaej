@@ -7,6 +7,7 @@ object TableForm: TTableForm
   ClientWidth = 480
   Constraints.MinHeight = 320
   Constraints.MinWidth = 480
+  OnClose = FormClose
   Position = poMainFormCenter
   ShowInTaskBar = stNever
   LCLVersion = '1.2.6.0'

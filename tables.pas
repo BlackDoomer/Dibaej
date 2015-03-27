@@ -1,9 +1,5 @@
 unit tables;
 
-{ Note from developer:
-  Both of "tables" and "f_table" units are just a interdependent prototypes.
-  Some things should be rewritten partially or even completely, I think. }
-
 {$MODE OBJFPC}
 {$LONGSTRINGS ON}
 
@@ -11,8 +7,7 @@ interface
 
 uses
   SysUtils, Classes,
-  SQLdb,
-  Forms, Controls, Dialogs, f_table;
+  SQLdb, DBGrids, f_table;
 
 type
 
@@ -33,22 +28,16 @@ type
     private
       FName          : String;
       FCaption       : String;
-      FForm          : TTableForm;
       FColumns       : array of TColumnInfo;
 
-      procedure Fetch();
     public
       constructor Create( AName, ACaption: String );
-
-      procedure Show( DBConnection: TSQLConnection );
-      procedure FormClose( Sender: TObject; var CloseAction: TCloseAction );
-
       procedure AddColumn( AName: String = 'ID'; ACaption: String = '';
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
+      procedure Fetch( DBGrid: TDBGrid );
 
       property Caption: String read FCaption;
-      property Form: TTableForm read FForm;
   end;
 
 var
@@ -62,54 +51,6 @@ begin
   FCaption := ACaption;
   SetLength( RegTable, Length(RegTable)+1 );
   RegTable[ High(RegTable) ] := Self;
-end;
-
-{ FORM PROCESSING ROUTINES =================================================== }
-
-procedure TTableInfo.Show( DBConnection: TSQLConnection );
-begin
-  if Assigned( FForm ) then
-    FForm.ShowOnTop()
-  else begin
-    Application.CreateForm( TTableForm, FForm );
-    with FForm do begin
-      Caption := Self.FCaption;
-      OnClose := @Self.FormClose;
-
-      SQLTransaction.DataBase := DBConnection;
-      SQLQuery.DataBase := DBConnection;
-
-      SQLTransaction.Active := True;
-      Fetch();
-    end;
-  end;
-end;
-
-{ TODO 3 : Move this somehow to f_table unit? }
-procedure TTableInfo.FormClose( Sender: TObject; var CloseAction: TCloseAction );
-begin
-  with FForm do
-    if not DBGrid.ReadOnly then
-      case MessageDlg( 'Would you like to apply your changes?' + LineEnding +
-                       '(if no changes were made, sorry me and press "No")',
-                       mtConfirmation, mbYesNoCancel, 0 ) of
-        mrYes: begin
-          SQLQuery.ApplyUpdates();
-          SQLTransaction.Action := caCommit;
-        end;
-
-        mrNo:
-          SQLTransaction.Action := caRollback;
-
-        else begin
-          CloseAction := caNone;
-          Exit;
-        end;
-      end;
-
-  //transaction will be performed on form close
-  FForm := nil;
-  CloseAction := caFree;
 end;
 
 { COMMON ROUTINES ============================================================ }
@@ -130,7 +71,7 @@ begin
 end;
 
 //this builds SQL SELECT command from table data and executes it
-procedure TTableInfo.Fetch();
+procedure TTableInfo.Fetch( DBGrid: TDBGrid );
 var
   cmd : String;
   init : Boolean;
@@ -153,20 +94,22 @@ begin
   for ColInf in FColumns do
     if not ( ColInf.RefTable = nil ) then begin
       { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
-      FForm.DBGrid.ReadOnly := True;
+      DBGrid.ReadOnly := True;
       cmd += ' inner join ' + ColInf.RefTable.FName +
              ' on ' + FName + '.' + ColInf.ColKey +
              ' = ' + ColInf.RefTable.FName + '.' + ColInf.RefKey;
     end;
 
   //command is prepared, let's execute
-  FForm.SQLQuery.Active := False;
-  FForm.SQLQuery.SQL.Text := cmd;
-  FForm.SQLQuery.Active := True;
+  with (DBGrid.DataSource.DataSet as TSQLQuery) do begin
+    Active := False;
+    SQL.Text := cmd;
+    Active := True;
+  end;
 
   //next we set predefined columns captions and widths
   for i := 0 to High( FColumns ) do
-    with FForm.DBGrid.Columns.Items[i] do begin
+    with DBGrid.Columns.Items[i] do begin
       if not ( FColumns[i].Caption = '' ) then
         Title.Caption := FColumns[i].Caption;
       if ( FColumns[i].Width > 0 ) then
