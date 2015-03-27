@@ -113,9 +113,9 @@ end;
 { TODO 1 : Fix SIGSEGV on filter applying }
 procedure TTableForm.ApplyBtnClick( Sender: TObject );
 begin
-  SQLQuery.ServerFiltered := False;
+  SQLQuery.Filtered := False;
   SQLQuery.Filter := FilterEdit.Text;
-  SQLQuery.ServerFiltered := True;  
+  SQLQuery.Filtered := True;  
 end;
 
 { TODO 2 : How about some user sorting in DBGrid? (with dgHeaderPushedLook) }
