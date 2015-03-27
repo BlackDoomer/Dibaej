@@ -39,7 +39,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="4">
+    <Units Count="5">
       <Unit0>
         <Filename Value="Dibaej.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -66,6 +66,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="tables"/>
       </Unit3>
+      <Unit4>
+        <Filename Value="def_tables.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="def_tables"/>
+      </Unit4>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

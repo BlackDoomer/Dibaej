@@ -59,7 +59,7 @@ implementation
 
 procedure TMainForm.FormCreate( Sender: TObject );
 var
-  i : TRegTables;
+  i : Cardinal;
   item : TMenuItem;
 begin
   Application.OnException := @ReportError;
@@ -68,11 +68,12 @@ begin
   IBConnection.LogEvents := LogAllEvents - [detFetch]; //because Lazarus don's save this. it's bug.
 
   //registering all tables from corresponding unit in menu
-  for i in TRegTables do begin
+  for i := Ord(Low(TRegTables)) to Ord(High(TRegTables)) do begin
     item := TMenuItem.Create( TablesItem );
     with item do begin
       Caption := RegTable[i].Caption;
       OnClick := @Self.TableItemClick;
+      Tag := i;
     end;
     TablesItem.Add( item );
   end;
@@ -107,7 +108,7 @@ end;
 procedure TMainForm.TableItemClick( Sender: TObject );
 begin
   { TODO 2 : Think about proper way to link menu items and tables, current is ugly }
-  RegTable[ TRegTables( TablesItem.IndexOf( Sender as TMenuItem ) ) ].Show( Self.IBConnection );
+  RegTable[ ( Sender as TMenuItem ).Tag ].Show( Self.IBConnection );
 end;
 
 { DATABASE CONNECTION EVENTS ================================================= }
