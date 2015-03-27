@@ -51,10 +51,6 @@ type
       property Form: TTableForm read FForm;
   end;
 
-  TRegTables = ( tblClassrooms, tblGroups, tblGroupsSubjects, tblLessons,
-                 tblSubjects, tblTeachers, tblTeachersSubjects, tblWeekday,
-                 tblSummary );
-
 var
   RegTable: array of TTableInfo;
 

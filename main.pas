@@ -59,7 +59,7 @@ implementation
 
 procedure TMainForm.FormCreate( Sender: TObject );
 var
-  i : Cardinal;
+  i : Integer;
   item : TMenuItem;
 begin
   Application.OnException := @ReportError;
@@ -68,7 +68,7 @@ begin
   IBConnection.LogEvents := LogAllEvents - [detFetch]; //because Lazarus don's save this. it's bug.
 
   //registering all tables from corresponding unit in menu
-  for i := Ord(Low(TRegTables)) to Ord(High(TRegTables)) do begin
+  for i := 0 to High(RegTable) do begin
     item := TMenuItem.Create( TablesItem );
     with item do begin
       Caption := RegTable[i].Caption;
