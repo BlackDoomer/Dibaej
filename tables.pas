@@ -29,13 +29,15 @@ type
       FName          : String;
       FCaption       : String;
       FColumns       : array of TColumnInfo;
+      FReadOnly      : Boolean;
 
     public
       constructor Create( AName, ACaption: String );
       procedure AddColumn( AName: String = 'ID'; ACaption: String = '';
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
-      procedure Fetch( DBGrid: TDBGrid );
+      function GetSelectSQL(): String;
+      procedure Fetch( DBGrid: TDBGrid; SQLQuery: TSQLQuery );
 
       property Caption: String read FCaption;
   end;
@@ -49,6 +51,7 @@ constructor TTableInfo.Create( AName, ACaption: String );
 begin
   FName := AName;
   FCaption := ACaption;
+  FReadOnly := False;
   SetLength( RegTable, Length(RegTable)+1 );
   RegTable[ High(RegTable) ] := Self;
 end;
@@ -68,44 +71,48 @@ begin
     ColKey := AColKey;
     RefKey := ARefKey;
   end;
+  { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
+  if not ( ARefTable = nil ) then FReadOnly := True;
 end;
 
-//this builds SQL SELECT command from table data and executes it
-procedure TTableInfo.Fetch( DBGrid: TDBGrid );
+function TTableInfo.GetSelectSQL(): String;
 var
-  cmd : String;
-  init : Boolean;
   ColInf : TColumnInfo;
-  i : Integer;
+  ColNames, TableRefs : String;
 begin
-  cmd := 'select ';
+  ColNames := '';
+  TableRefs := '';
 
-  init := True;
   for ColInf in FColumns do begin
-    if init then init := False else cmd += ', ';
-    if ( ColInf.RefTable = nil ) then cmd += FName
-                                 else cmd += ColInf.RefTable.FName;
-    cmd += '.' + ColInf.Name;
-  end;
+    if not ( ColNames = '' ) then ColNames += ', ';
 
-  cmd += ' from ' + FName;
+    if ( ColInf.RefTable = nil ) then
+      ColNames += FName
+    else begin
+      ColNames += ColInf.RefTable.FName;
 
-  //support for table references
-  for ColInf in FColumns do
-    if not ( ColInf.RefTable = nil ) then begin
-      { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
-      DBGrid.ReadOnly := True;
-      cmd += ' inner join ' + ColInf.RefTable.FName +
-             ' on ' + FName + '.' + ColInf.ColKey +
-             ' = ' + ColInf.RefTable.FName + '.' + ColInf.RefKey;
+      //support for table references
+      TableRefs += ' inner join ' + ColInf.RefTable.FName +
+                   ' on ' + FName + '.' + ColInf.ColKey +
+                   ' = ' + ColInf.RefTable.FName + '.' + ColInf.RefKey;
     end;
 
-  //command is prepared, let's execute
-  with (DBGrid.DataSource.DataSet as TSQLQuery) do begin
-    Active := False;
-    SQL.Text := cmd;
-    Active := True;
+    ColNames += '.' + ColInf.Name;
   end;
+
+  Result := 'select ' + ColNames + ' from ' + FName + TableRefs;
+end;
+
+procedure TTableInfo.Fetch( DBGrid: TDBGrid; SQLQuery: TSQLQuery );
+var
+  i : Integer;
+begin
+  DBGrid.ReadOnly := FReadOnly;
+
+  //let's retrieve data from table
+  SQLQuery.Active := False;
+  SQLQuery.SQL.Text := GetSelectSQL();
+  SQLQuery.Active := True;
 
   //next we set predefined columns captions and widths
   for i := 0 to High( FColumns ) do

@@ -114,7 +114,7 @@ var
 begin
   Index := ( Sender as TMenuItem ).Tag;
   if ShowTableForm( Index, RegTable[Index].Caption, IBConnection ) then
-    with TableForm[Index] do RegTable[Index].Fetch( DBGrid );
+    with TableForm[Index] do RegTable[Index].Fetch( DBGrid, SQLQuery );
 end;
 
 { DATABASE CONNECTION EVENTS ================================================= }
