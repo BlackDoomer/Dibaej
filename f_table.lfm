@@ -37,28 +37,6 @@ object TableForm: TTableForm
     OnClick = RefreshBtnClick
     TabOrder = 1
   end
-  object FilterEdit: TEdit
-    Left = 16
-    Height = 21
-    Top = 282
-    Width = 328
-    Anchors = [akLeft, akRight, akBottom]
-    OnClick = FilterEditClick
-    ReadOnly = True
-    TabOrder = 2
-    Text = 'Enter filter expression here...'
-  end
-  object ApplyBtn: TButton
-    Left = 351
-    Height = 25
-    Top = 280
-    Width = 25
-    Anchors = [akRight, akBottom]
-    Caption = '#'
-    Enabled = False
-    OnClick = ApplyBtnClick
-    TabOrder = 3
-  end
   object SQLTransaction: TSQLTransaction
     Active = False
     Action = caNone
