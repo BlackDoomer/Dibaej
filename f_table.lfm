@@ -1,12 +1,12 @@
 object TableForm: TTableForm
-  Left = 365
-  Height = 320
-  Top = 220
-  Width = 480
-  ClientHeight = 320
-  ClientWidth = 480
-  Constraints.MinHeight = 320
-  Constraints.MinWidth = 480
+  Left = 343
+  Height = 400
+  Top = 143
+  Width = 800
+  ClientHeight = 400
+  ClientWidth = 800
+  Constraints.MinHeight = 400
+  Constraints.MinWidth = 800
   OnClose = FormClose
   Position = poMainFormCenter
   ShowInTaskBar = stNever
@@ -14,7 +14,7 @@ object TableForm: TTableForm
   Visible = True
   object DBGrid: TDBGrid
     Left = 8
-    Height = 264
+    Height = 384
     Top = 8
     Width = 464
     Anchors = [akTop, akLeft, akRight, akBottom]
@@ -28,14 +28,126 @@ object TableForm: TTableForm
     TitleStyle = tsStandard
   end
   object RefreshBtn: TButton
-    Left = 384
+    Left = 712
     Height = 25
-    Top = 280
+    Top = 367
     Width = 75
     Anchors = [akRight, akBottom]
     Caption = 'Refresh'
     OnClick = RefreshBtnClick
     TabOrder = 1
+  end
+  object FiltersBox: TGroupBox
+    Left = 480
+    Height = 208
+    Top = 8
+    Width = 312
+    Anchors = [akTop, akRight]
+    Caption = 'Fiters'
+    ClientHeight = 190
+    ClientWidth = 308
+    TabOrder = 2
+    object FiltersList: TListBox
+      Left = 8
+      Height = 96
+      Top = 0
+      Width = 292
+      ItemHeight = 0
+      OnSelectionChange = FiltersListSelectionChange
+      TabOrder = 0
+    end
+    object ColumnsCB: TComboBox
+      Left = 8
+      Height = 21
+      Top = 104
+      Width = 204
+      ItemHeight = 13
+      OnChange = FilterChange
+      Style = csDropDownList
+      TabOrder = 1
+    end
+    object OperationsCB: TComboBox
+      Left = 224
+      Height = 21
+      Top = 104
+      Width = 76
+      ItemHeight = 13
+      ItemIndex = 0
+      Items.Strings = (
+        '='
+        '<>'
+        '>'
+        '>='
+        '<'
+        '<='
+        'LIKE'
+      )
+      OnChange = FilterChange
+      Style = csDropDownList
+      TabOrder = 2
+      Text = '='
+    end
+    object ConstEdit: TEdit
+      Left = 8
+      Height = 21
+      Top = 128
+      Width = 204
+      OnChange = FilterChange
+      TabOrder = 3
+    end
+    object LogicCB: TComboBox
+      Left = 224
+      Height = 21
+      Top = 128
+      Width = 76
+      ItemHeight = 13
+      ItemIndex = 0
+      Items.Strings = (
+        'AND'
+        'OR'
+      )
+      OnChange = FilterChange
+      Style = csDropDownList
+      TabOrder = 4
+      Text = 'AND'
+    end
+    object AddBtn: TButton
+      Left = 137
+      Height = 25
+      Top = 160
+      Width = 75
+      Caption = 'Add'
+      OnClick = AddBtnClick
+      TabOrder = 5
+    end
+    object ClearBtn: TButton
+      Left = 216
+      Height = 25
+      Top = 160
+      Width = 75
+      Caption = 'Clear'
+      OnClick = ClearBtnClick
+      TabOrder = 6
+    end
+    object FiltersCheck: TCheckBox
+      Left = 32
+      Height = 17
+      Top = 164
+      Width = 80
+      Caption = 'Enable filters'
+      Checked = True
+      State = cbChecked
+      TabOrder = 7
+    end
+  end
+  object SortingBox: TGroupBox
+    Left = 480
+    Height = 145
+    Top = 216
+    Width = 313
+    Anchors = [akTop, akRight]
+    Caption = 'Sorting'
+    TabOrder = 3
   end
   object SQLTransaction: TSQLTransaction
     Active = False

@@ -7,7 +7,7 @@ interface
 
 uses
   SysUtils, Classes,
-  SQLdb, DBGrids;
+  StdCtrls, DBGrids;
 
 type
 
@@ -24,6 +24,9 @@ type
   end;
 
   //general table class
+  
+  { TTableInfo }
+
   TTableInfo = class
     private
       FName          : String;
@@ -31,13 +34,18 @@ type
       FColumns       : array of TColumnInfo;
       FReadOnly      : Boolean;
 
+      function GetColumnName( ColInf: TColumnInfo ): String;
+      function GetColumnCaption( ColInf: TColumnInfo ): String;
     public
       constructor Create( AName, ACaption: String );
       procedure AddColumn( AName: String = 'ID'; ACaption: String = '';
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
       function GetSelectSQL(): String;
-      procedure Fetch( DBGrid: TDBGrid; SQLQuery: TSQLQuery );
+      function ColumnName( Index: Integer ): String;
+      function ColumnCaption( Index: Integer ): String;
+      procedure AdjustDBGrid( DBGrid: TDBGrid );
+      procedure FillCombobox( ComboBox: TComboBox );
 
       property Caption: String read FCaption;
   end;
@@ -85,43 +93,63 @@ begin
 
   for ColInf in FColumns do begin
     if not ( ColNames = '' ) then ColNames += ', ';
+    ColNames += GetColumnName( ColInf );
 
-    if ( ColInf.RefTable = nil ) then
-      ColNames += FName
-    else begin
-      ColNames += ColInf.RefTable.FName;
-
-      //support for table references
+    //support for table references
+    if not ( ColInf.RefTable = nil ) then
       TableRefs += ' inner join ' + ColInf.RefTable.FName +
                    ' on ' + FName + '.' + ColInf.ColKey +
                    ' = ' + ColInf.RefTable.FName + '.' + ColInf.RefKey;
-    end;
-
-    ColNames += '.' + ColInf.Name;
   end;
 
   Result := 'select ' + ColNames + ' from ' + FName + TableRefs;
 end;
 
-procedure TTableInfo.Fetch( DBGrid: TDBGrid; SQLQuery: TSQLQuery );
+function TTableInfo.GetColumnName( ColInf: TColumnInfo ): String;
+begin
+  if ( ColInf.RefTable = nil ) then Result := FName
+                               else Result := ColInf.RefTable.FName;
+  Result += '.' + ColInf.Name;
+end;
+
+function TTableInfo.ColumnName(Index: Integer): String;
+   begin Result := GetColumnName( FColumns[Index] );
+     end;
+
+function TTableInfo.GetColumnCaption( ColInf: TColumnInfo ): String;
+begin
+  if ( ColInf.Caption = '' ) then Result := GetColumnName( ColInf )
+                             else Result := ColInf.Caption;
+end;
+
+function TTableInfo.ColumnCaption(Index: Integer): String;
+   begin Result := GetColumnCaption( FColumns[Index] );
+     end;
+
+//sets predefined columns captions and widths
+procedure TTableInfo.AdjustDBGrid( DBGrid: TDBGrid );
 var
   i : Integer;
 begin
   DBGrid.ReadOnly := FReadOnly;
 
-  //let's retrieve data from table
-  SQLQuery.Active := False;
-  SQLQuery.SQL.Text := GetSelectSQL();
-  SQLQuery.Active := True;
-
-  //next we set predefined columns captions and widths
   for i := 0 to High( FColumns ) do
     with DBGrid.Columns.Items[i] do begin
-      if not ( FColumns[i].Caption = '' ) then
-        Title.Caption := FColumns[i].Caption;
+      Title.Caption := GetColumnCaption( FColumns[i] );
       if ( FColumns[i].Width > 0 ) then
         Width := FColumns[i].Width;
     end;
+end;
+
+//fills specified combobox with columns captions
+procedure TTableInfo.FillCombobox( ComboBox: TComboBox );
+var
+  ColInf : TColumnInfo;
+begin
+  ComboBox.Clear();
+  for ColInf in FColumns do
+    ComboBox.Items.Add( GetColumnCaption( ColInf ) );
+  ComboBox.ItemIndex := 0;
 end;
 
 end.
