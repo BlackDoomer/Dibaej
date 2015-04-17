@@ -89,15 +89,15 @@ begin
   if IBConnection.Connected then begin
     if not ( MessageDlg( 'Connection seems established, do you want to reconnect?',
                           mtWarning, mbYesNo, 0 ) = mrYes ) then Exit;
-    IBConnection.Connected := False;
+    IBConnection.Close( True );
 
-    { okay, another Lazarus^W SQLdb bug again
-      if connection was interrupted, we're lose any chance to reanimate it
-      because when we do Connected := False, we get an error that connection
-      is interrupted without any changes on connection context! GENIUS! }
+    { okay, another Lazarus^W SQLdb bug again. if connection was interrupted,
+      we're lose any chance to reanimate it because when we try to closedown
+      connection (even forced)), we get an error that connection is interrupted
+      without any changes on connection context. }
   end;
 
-  IBConnection.Connected := True;
+  IBConnection.Open();
 end;
 
 procedure TMainForm.AboutItemClick( Sender: TObject );
@@ -109,12 +109,8 @@ end;
 
 //callback for dynamically registering table items in their menu
 procedure TMainForm.TableItemClick( Sender: TObject );
-var
-  Index: Integer;
 begin
-  Index := ( Sender as TMenuItem ).Tag;
-  if ShowTableForm( Index, RegTable[Index].Caption, IBConnection ) then
-    with TableForm[Index] do RegTable[Index].Fetch( DBGrid, SQLQuery );
+  ShowTableForm( (Sender as TMenuItem).Tag, IBConnection )
 end;
 
 { DATABASE CONNECTION EVENTS ================================================= }

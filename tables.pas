@@ -7,7 +7,7 @@ interface
 
 uses
   SysUtils, Classes,
-  SQLdb, DBGrids, f_table;
+  SQLdb, DBGrids;
 
 type
 

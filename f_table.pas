@@ -32,19 +32,19 @@ type
     { public declarations }
   end;
 
-  function ShowTableForm( Index: Integer; ACaption: String;
-                          DBConnection: TSQLConnection ): Boolean;
+  function ShowTableForm( Index: Integer; DBConnection: TSQLConnection ): Boolean;
 
 var
   TableForm : array of TTableForm;
 
 implementation
 
+uses tables;
+
 {$R *.lfm}
 
 //returns FALSE if form was already created, TRUE otherwise
-function ShowTableForm( Index: Integer; ACaption: String;
-                        DBConnection: TSQLConnection ): Boolean;
+function ShowTableForm( Index: Integer; DBConnection: TSQLConnection ): Boolean;
 begin
 
   if Assigned( TableForm[Index] ) then begin
@@ -54,11 +54,13 @@ begin
     Application.CreateForm( TTableForm, TableForm[Index] );
     with TableForm[Index] do begin
       Tag := Index;
-      Caption := ACaption;
+      Caption := RegTable[Index].Caption;
+
       SQLTransaction.DataBase := DBConnection;
       SQLQuery.DataBase := DBConnection;
-
       SQLTransaction.Active := True;
+
+      RegTable[Index].Fetch( DBGrid, SQLQuery );
       Result := True;
     end;
   end;
