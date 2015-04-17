@@ -36,7 +36,6 @@ type
       ClearBtn      : TButton;
       FiltersCheck  : TCheckBox;
 
-    SortingBox      : TGroupBox;
 
   { database controls }
     SQLTransaction  : TSQLTransaction;
@@ -45,6 +44,7 @@ type
 
     procedure FormClose( Sender: TObject; var CloseAction: TCloseAction );
     procedure RefreshBtnClick( Sender: TObject );
+    procedure DBGridTitleClick( Column: TColumn );
 
     procedure AddBtnClick(Sender: TObject);
     procedure ClearBtnClick( Sender: TObject );
@@ -54,7 +54,9 @@ type
   private
     Filters: array of TFilter;
     FilterCount: Integer;
-    procedure Fetch( UpdateCBs: Boolean );
+    SortIndex: Integer;
+    DescSort: Boolean;
+    procedure Fetch( UpdateCBs: Boolean = False );
     procedure UpdateFilter( Index: Integer );
     function BuildFilter( Index: Integer; ForQuery: Boolean ): String;
   public
@@ -85,6 +87,9 @@ begin
       Tag := Index;
       Caption := RegTable[Index].Caption;
 
+      SortIndex := -1;
+      DescSort := True; //will be set to FALSE on first sorting
+
       SQLTransaction.DataBase := DBConnection;
       SQLQuery.DataBase := DBConnection;
       SQLTransaction.Active := True;
@@ -100,7 +105,7 @@ end;
 
 procedure TTableForm.FormClose( Sender: TObject; var CloseAction: TCloseAction );
 begin
-  { TODO 2 : Split commit and rollabck onto two separate buttons in table form }
+  { TODO 2 : Split commit and rollback onto two separate buttons in table form }
   if not DBGrid.ReadOnly then
     case MessageDlg( 'Would you like to apply your changes?' + LineEnding +
                      '(if no changes were made, sorry me and press "No")',
@@ -125,10 +130,18 @@ begin
 end;
 
 procedure TTableForm.RefreshBtnClick( Sender: TObject );
-    begin Fetch( False );
+    begin Fetch();
       end;
 
-procedure TTableForm.Fetch( UpdateCBs: Boolean );
+procedure TTableForm.DBGridTitleClick( Column: TColumn );
+begin
+  { TODO 2 : Improve sorting, add ability to select multiple columns }
+  SortIndex := Column.Index;
+  DescSort := not DescSort;
+  Fetch();
+end;
+
+procedure TTableForm.Fetch( UpdateCBs: Boolean = False );
 var
   QueryCmd : String;
   i : Integer;
@@ -141,6 +154,11 @@ begin
       QueryCmd += ' ' + BuildFilter( i, True );
     end;
 
+  if not ( SortIndex = -1 ) then begin
+    QueryCmd += ' order by ' + RegTable[Tag].ColumnName( SortIndex );
+    if DescSort then QueryCmd += ' desc';
+  end;
+
   SQLQuery.Active := False;
   SQLQuery.SQL.Text := QueryCmd;
   SQLQuery.Active := True;
@@ -148,8 +166,6 @@ begin
   RegTable[Tag].AdjustDBGrid( DBGrid );  
   if UpdateCBs then RegTable[Tag].FillCombobox( ColumnsCB );
 end;
-
-{ TODO 2 : How about some user sorting in DBGrid? (with dgHeaderPushedLook) }
 
 { FILTERS PROCESSING ========================================================= }
 
