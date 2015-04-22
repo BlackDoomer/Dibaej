@@ -2,5 +2,7 @@
 *.res
 *.txt
 *.fdb
+*.lps
+Thumbs.db
 backup/
 lib/
