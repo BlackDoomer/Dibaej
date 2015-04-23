@@ -32,7 +32,7 @@ type
       FName          : String;
       FCaption       : String;
       FColumns       : array of TColumnInfo;
-      FReadOnly      : Boolean;
+      FReferenced    : Boolean;
 
       function GetColumnName( ColInf: TColumnInfo ): String;
       function GetColumnCaption( ColInf: TColumnInfo ): String;
@@ -59,7 +59,7 @@ constructor TTableInfo.Create( AName, ACaption: String );
 begin
   FName := AName;
   FCaption := ACaption;
-  FReadOnly := False;
+  FReferenced := False;
   SetLength( RegTable, Length(RegTable)+1 );
   RegTable[ High(RegTable) ] := Self;
 end;
@@ -79,8 +79,7 @@ begin
     ColKey := AColKey;
     RefKey := ARefKey;
   end;
-  { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
-  if not ( ARefTable = nil ) then FReadOnly := True;
+  if not ( ARefTable = nil ) then FReferenced := True;
 end;
 
 function TTableInfo.GetSelectSQL(): String;
@@ -118,8 +117,14 @@ function TTableInfo.ColumnName(Index: Integer): String;
 
 function TTableInfo.GetColumnCaption( ColInf: TColumnInfo ): String;
 begin
-  if ( ColInf.Caption = '' ) then Result := GetColumnName( ColInf )
-                             else Result := ColInf.Caption;
+  if ( ColInf.Caption = '' ) then begin
+    if FReferenced then
+      Result := GetColumnName( ColInf )
+    else
+      Result := ColInf.Name;
+  end else begin
+    Result := ColInf.Caption;
+  end;
 end;
 
 function TTableInfo.ColumnCaption(Index: Integer): String;
@@ -131,7 +136,8 @@ procedure TTableInfo.AdjustDBGrid( DBGrid: TDBGrid );
 var
   i : Integer;
 begin
-  DBGrid.ReadOnly := FReadOnly;
+  { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
+  DBGrid.ReadOnly := FReferenced;
 
   for i := 0 to High( FColumns ) do
     with DBGrid.Columns.Items[i] do begin
