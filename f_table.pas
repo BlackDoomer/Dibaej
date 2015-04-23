@@ -155,7 +155,7 @@ begin
     end;
 
   if not ( SortIndex = -1 ) then begin
-    QueryCmd += ' order by ' + RegTable[Tag].ColumnName( SortIndex );
+    QueryCmd += ' order by ' + IntToStr( SortIndex );
     if DescSort then QueryCmd += ' desc';
   end;
 
