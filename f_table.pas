@@ -52,10 +52,10 @@ type
     procedure FiltersListSelectionChange( Sender: TObject; User: Boolean );
 
   private
-    Filters: array of TFilter;
-    FilterCount: Integer;
-    SortIndex: Integer;
-    DescSort: Boolean;
+    FFilters: array of TFilter;
+    FFilterCount: Integer;
+    FSortIndex: Integer;
+    FDescSort: Boolean;
     procedure Fetch( UpdateCBs: Boolean = False );
     procedure UpdateFilter( Index: Integer );
     function BuildFilter( Index: Integer; ForQuery: Boolean ): String;
@@ -87,8 +87,8 @@ begin
       Tag := Index;
       Caption := RegTable[Index].Caption;
 
-      SortIndex := -1;
-      DescSort := True; //will be set to FALSE on first sorting
+      FSortIndex := -1;
+      FDescSort := True; //will be set to FALSE on first sorting
 
       SQLTransaction.DataBase := DBConnection;
       SQLQuery.DataBase := DBConnection;
@@ -136,8 +136,8 @@ procedure TTableForm.RefreshBtnClick( Sender: TObject );
 procedure TTableForm.DBGridTitleClick( Column: TColumn );
 begin
   { TODO 2 : Improve sorting, add ability to select multiple columns }
-  SortIndex := Column.Index;
-  DescSort := not DescSort;
+  FSortIndex := Column.Index;
+  FDescSort := not FDescSort;
   Fetch();
 end;
 
@@ -149,14 +149,14 @@ begin
   QueryCmd := RegTable[Tag].GetSelectSQL();
 
   if FiltersCheck.Checked then
-    for i := 0 to FilterCount-1 do begin
+    for i := 0 to FFilterCount-1 do begin
       if (i = 0) then QueryCmd += ' where';
       QueryCmd += ' ' + BuildFilter( i, True );
     end;
 
-  if not ( SortIndex = -1 ) then begin
-    QueryCmd += ' order by ' + IntToStr( SortIndex );
-    if DescSort then QueryCmd += ' desc';
+  if not ( FSortIndex = -1 ) then begin
+    QueryCmd += ' order by ' + IntToStr( FSortIndex );
+    if FDescSort then QueryCmd += ' desc';
   end;
 
   SQLQuery.Active := False;
@@ -171,30 +171,30 @@ end;
 
 procedure TTableForm.AddBtnClick( Sender: TObject );
 begin
-  FilterCount += 1;
-  SetLength( Filters, FilterCount );
+  FFilterCount += 1;
+  SetLength( FFilters, FFilterCount );
   FiltersList.Items.Add('');
-  FiltersList.ItemIndex := FilterCount-1;
-  UpdateFilter( FilterCount-1 );
+  FiltersList.ItemIndex := FFilterCount-1;
+  UpdateFilter( FFilterCount-1 );
 end;
 
 procedure TTableForm.ClearBtnClick( Sender: TObject );
 begin
-  FilterCount := 0;
-  SetLength( Filters, 0 );
+  FFilterCount := 0;
+  SetLength( FFilters, 0 );
   FiltersList.Clear();
 end;
 
 procedure TTableForm.FilterChange( Sender: TObject );
 begin
-  if ( FilterCount > 0 ) then
+  if ( FFilterCount > 0 ) then
     UpdateFilter( FiltersList.ItemIndex );
 end;
 
 procedure TTableForm.FiltersListSelectionChange( Sender: TObject; User: Boolean );
 begin
   if User then
-    with Filters[ FiltersList.ItemIndex ] do begin
+    with FFilters[ FiltersList.ItemIndex ] do begin
       ColumnsCB.ItemIndex := Column;
       OperationsCB.Text := Operation;
       ConstEdit.Text := Constant;
@@ -204,7 +204,7 @@ end;
 
 procedure TTableForm.UpdateFilter( Index: Integer );
 begin
-  with Filters[ Index ] do begin
+  with FFilters[ Index ] do begin
     Column := ColumnsCB.ItemIndex;
     Operation := OperationsCB.Text;
     Constant := ConstEdit.Text;
@@ -215,7 +215,7 @@ end;
 
 function TTableForm.BuildFilter( Index: Integer; ForQuery: Boolean ): String;
 begin
-  with Filters[ Index ] do begin
+  with FFilters[ Index ] do begin
     if ForQuery then Result := RegTable[Tag].ColumnName( Column )
                 else Result := RegTable[Tag].ColumnCaption( Column );
 
@@ -227,7 +227,7 @@ begin
       Result += Constant;
     end;
 
-    if not ForQuery or ( Index < FilterCount-1 ) then
+    if not ForQuery or ( Index < FFilterCount-1 ) then
       Result += ' ' + Logic;
   end;
 end;
