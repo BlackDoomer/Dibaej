@@ -1,45 +1,85 @@
 CREATE DATABASE 'localhost:J:\database\TIMETABLE.FDB' user 'SYSDBA' password 'masterkey';
 
+SET GENERATOR SQL$DEFAULT TO 1000;
+
+
 CREATE TABLE teachers(
 	id integer primary key,
 	name varchar(50)
 	);
+
+SET TERM ^ ;
+CREATE TRIGGER autoid_teachers FOR teachers
+ACTIVE BEFORE INSERT POSITION 0
+AS BEGIN 
+  if (NEW.ID is NULL) then NEW.ID = GEN_ID(SQL$DEFAULT, 1);
+END^ SET TERM ; ^
+
 
 CREATE TABLE subjects(
 	id integer primary key,
 	name varchar(50)
 	);
 
+SET TERM ^ ;
+CREATE TRIGGER autoid_subjects FOR subjects
+ACTIVE BEFORE INSERT POSITION 0
+AS BEGIN 
+  if (NEW.ID is NULL) then NEW.ID = GEN_ID(SQL$DEFAULT, 1);
+END^ SET TERM ; ^
+
+
 CREATE TABLE groups(
 	id integer primary key,
 	name varchar(50)
 	);
+
+SET TERM ^ ;
+CREATE TRIGGER autoid_groups FOR groups
+ACTIVE BEFORE INSERT POSITION 0
+AS BEGIN 
+  if (NEW.ID is NULL) then NEW.ID = GEN_ID(SQL$DEFAULT, 1);
+END^ SET TERM ; ^
+
 	
 CREATE TABLE classrooms(
 	id integer primary key,
 	name varchar(50)
 	);
 
+SET TERM ^ ;
+CREATE TRIGGER autoid_classrooms FOR classrooms
+ACTIVE BEFORE INSERT POSITION 0
+AS BEGIN 
+  if (NEW.ID is NULL) then NEW.ID = GEN_ID(SQL$DEFAULT, 1);
+END^ SET TERM ; ^
+
+
 CREATE TABLE teachers_subjects(
 	teacher_id integer,
 	subject_id integer
 	);
-	
+
+
 CREATE TABLE groups_subjects(
 	group_id integer,
 	subject_id integer
 	);
-	
+
+
 CREATE TABLE weekday (
 	id integer primary key,
 	Weekday varchar(15)
 	);
 
-CREATE TABLE pair(
-	id integer primary key,
-	num integer
-	);
-	
+SET TERM ^ ;
+CREATE TRIGGER autoid_weekday FOR weekday
+ACTIVE BEFORE INSERT POSITION 0
+AS BEGIN 
+  if (NEW.ID is NULL) then NEW.ID = GEN_ID(SQL$DEFAULT, 1);
+END^ SET TERM ; ^
+
+
 CREATE TABLE lessons(
 	pair_id integer,
 	weekday_id integer,
@@ -47,7 +87,7 @@ CREATE TABLE lessons(
 	subject_id integer,
 	class_id integer,
 	teacher_id integer
-	);
+);
 
 --Преподаватели	
 INSERT INTO teachers VALUES (100, 'Juplev Anton Sergeevich');
@@ -116,16 +156,6 @@ INSERT INTO weekday VALUES (504, 'Thu');
 INSERT INTO weekday VALUES (505, 'Fri');
 INSERT INTO weekday VALUES (506, 'Sat');
 INSERT INTO weekday VALUES (507, 'Sun');
-
---Пары (номера уроков на в определенный день недели)
-INSERT INTO pair VALUES (1, 1);
-INSERT INTO pair VALUES (2, 2);
-INSERT INTO pair VALUES (3, 3);
-INSERT INTO pair VALUES (4, 4);
-INSERT INTO pair VALUES (5, 5);
-INSERT INTO pair VALUES (6, 6);
-INSERT INTO pair VALUES (7, 7);
-INSERT INTO pair VALUES (8, 8);
 
 --Отношение Группы-Предметы
 INSERT INTO groups_subjects VALUES (200, 300);
