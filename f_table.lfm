@@ -1,7 +1,7 @@
 object TableForm: TTableForm
-  Left = 454
+  Left = 335
   Height = 400
-  Top = 253
+  Top = 193
   Width = 800
   ClientHeight = 400
   ClientWidth = 800
@@ -158,27 +158,27 @@ object TableForm: TTableForm
       Text = 'AND'
     end
     object AddFilterBtn: TButton
-      Left = 137
+      Left = 160
       Height = 25
       Top = 304
-      Width = 75
+      Width = 64
       Anchors = [akRight, akBottom]
       Caption = 'Add'
       OnClick = AddFilterBtnClick
       TabOrder = 6
     end
     object ClearFiltersBtn: TButton
-      Left = 216
+      Left = 232
       Height = 25
       Top = 304
-      Width = 75
+      Width = 64
       Anchors = [akRight, akBottom]
       Caption = 'Clear'
       OnClick = ClearFiltersBtnClick
       TabOrder = 7
     end
     object FiltersCheck: TCheckBox
-      Left = 32
+      Left = 40
       Height = 17
       Top = 308
       Width = 80

@@ -63,7 +63,6 @@ type
 
   private
     FFilters : array of TFilter;
-    FFilterCount : Integer;
     FSortIndex : Integer;
     FDescSort : Boolean;
     FDataEdited : Boolean;
@@ -159,23 +158,21 @@ end;
 
 procedure TTableForm.AddFilterBtnClick( Sender: TObject );
 begin
-  FFilterCount += 1;
-  SetLength( FFilters, FFilterCount );
   FiltersList.Items.Add('');
-  FiltersList.ItemIndex := FFilterCount-1;
-  UpdateFilter( FFilterCount-1 );
+  SetLength( FFilters, FiltersList.Count );
+  FiltersList.ItemIndex := FiltersList.Count-1;
+  UpdateFilter( FiltersList.Count-1 );
 end;
 
 procedure TTableForm.ClearFiltersBtnClick( Sender: TObject );
 begin
-  FFilterCount := 0;
   SetLength( FFilters, 0 );
   FiltersList.Clear();
 end;
 
 procedure TTableForm.FilterChange( Sender: TObject );
 begin
-  if ( FFilterCount > 0 ) then
+  if ( FiltersList.Count > 0 ) then
     UpdateFilter( FiltersList.ItemIndex );
 end;
 
@@ -231,16 +228,20 @@ end;
 
 procedure TTableForm.Fetch();
 var
-  QueryCmd : String;
+  QueryCmd, FilterStr : String;
   i : Integer;
 begin
-  QueryCmd := RegTable[Tag].GetSelectSQL();
-
-  if FiltersCheck.Checked then
-    for i := 0 to FFilterCount-1 do begin
-      if (i = 0) then QueryCmd += ' where';
-      QueryCmd += ' ' + BuildFilter( i, True );
+  QueryCmd := '';
+  if FiltersCheck.Checked then begin
+    for i := 0 to FiltersList.Count-1 do begin
+      FilterStr := BuildFilter( i, True );
+      if not ( FilterStr = '' ) then QueryCmd += ' ' + FilterStr;
     end;
+    if not ( QueryCmd = '' ) then
+      QueryCmd := ' where' + QueryCmd;
+  end;
+
+  QueryCmd := RegTable[Tag].GetSelectSQL() + QueryCmd;
 
   if not ( FSortIndex = -1 ) then begin
     QueryCmd += ' order by ' + IntToStr( FSortIndex );
@@ -269,7 +270,7 @@ begin
       Result += Constant;
     end;
 
-    if not ForQuery or ( Index < FFilterCount-1 ) then
+    if not ForQuery or ( Index < FiltersList.Count-1 ) then
       Result += ' ' + Logic;
   end;
 end;
