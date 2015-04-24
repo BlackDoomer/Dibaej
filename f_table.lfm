@@ -1,7 +1,7 @@
 object TableForm: TTableForm
-  Left = 39
+  Left = 307
   Height = 400
-  Top = 465
+  Top = 514
   Width = 800
   ClientHeight = 400
   ClientWidth = 800
@@ -28,6 +28,26 @@ object TableForm: TTableForm
     TitleStyle = tsStandard
     OnTitleClick = DBGridTitleClick
   end
+  object CommitBtn: TButton
+    Left = 488
+    Height = 25
+    Top = 367
+    Width = 75
+    Anchors = [akRight, akBottom]
+    Caption = 'Commit'
+    OnClick = CommitBtnClick
+    TabOrder = 1
+  end
+  object ResetBtn: TButton
+    Left = 568
+    Height = 25
+    Top = 367
+    Width = 75
+    Anchors = [akRight, akBottom]
+    Caption = 'Reset'
+    OnClick = ResetBtnClick
+    TabOrder = 2
+  end
   object RefreshBtn: TButton
     Left = 712
     Height = 25
@@ -36,7 +56,7 @@ object TableForm: TTableForm
     Anchors = [akRight, akBottom]
     Caption = 'Refresh'
     OnClick = RefreshBtnClick
-    TabOrder = 1
+    TabOrder = 3
   end
   object FiltersBox: TGroupBox
     Left = 480
@@ -47,7 +67,7 @@ object TableForm: TTableForm
     Caption = 'Fiters'
     ClientHeight = 334
     ClientWidth = 308
-    TabOrder = 2
+    TabOrder = 4
     object FiltersList: TListBox
       Left = 8
       Height = 240
@@ -125,7 +145,7 @@ object TableForm: TTableForm
       Anchors = [akRight, akBottom]
       Caption = 'Add'
       OnClick = AddBtnClick
-      TabOrder = 5
+      TabOrder = 6
     end
     object ClearBtn: TButton
       Left = 216
@@ -135,7 +155,7 @@ object TableForm: TTableForm
       Anchors = [akRight, akBottom]
       Caption = 'Clear'
       OnClick = ClearBtnClick
-      TabOrder = 6
+      TabOrder = 7
     end
     object FiltersCheck: TCheckBox
       Left = 32
@@ -146,7 +166,7 @@ object TableForm: TTableForm
       Caption = 'Enable filters'
       Checked = True
       State = cbChecked
-      TabOrder = 7
+      TabOrder = 5
     end
   end
   object SQLTransaction: TSQLTransaction

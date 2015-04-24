@@ -24,6 +24,8 @@ type
   TTableForm = class( TForm )
   { interface controls }
     DBGrid          : TDBGrid;
+    ResetBtn        : TButton;
+    CommitBtn       : TButton;
     RefreshBtn      : TButton;
 
     FiltersBox      : TGroupBox;
@@ -43,6 +45,8 @@ type
     DataSource      : TDataSource;
 
     procedure FormClose( Sender: TObject; var CloseAction: TCloseAction );
+    procedure CommitBtnClick( Sender: TObject );
+    procedure ResetBtnClick( Sender: TObject );
     procedure RefreshBtnClick( Sender: TObject );
     procedure DBGridTitleClick( Column: TColumn );
 
@@ -110,27 +114,26 @@ end;
 
 procedure TTableForm.FormClose( Sender: TObject; var CloseAction: TCloseAction );
 begin
-  { TODO 2 : Split commit and rollback onto two separate buttons in table form }
-  if FDataEdited then
-    case MessageDlg( 'Would you like to apply your changes?',
-                     mtConfirmation, mbYesNoCancel, 0 ) of
-      mrYes: begin
-        SQLQuery.ApplyUpdates();
-        SQLTransaction.Action := caCommit;
-      end;
+  if DiscardChanges() then begin
+    SQLTransaction.Rollback();
+    TableForm[Tag] := nil;
+    CloseAction := caFree;
+  end else begin
+    CloseAction := TCloseAction.caNone; //caNone is also a transaction state
+  end;
+end;
 
-      mrNo:
-        SQLTransaction.Action := caRollback;
+procedure TTableForm.CommitBtnClick( Sender: TObject );
+begin
+  SQLQuery.ApplyUpdates();
+  SQLTransaction.Commit();
+  Fetch();
+end;
 
-      else begin
-        CloseAction := TCloseAction.caNone; //caNone is also a transaction state
-        Exit;
-      end;
-    end;
-
-  //transaction will be performed on form close
-  TableForm[Tag] := nil;
-  CloseAction := caFree;
+procedure TTableForm.ResetBtnClick( Sender: TObject );
+begin
+  SQLQuery.CancelUpdates();
+  FDataEdited := False;
 end;
 
 procedure TTableForm.RefreshBtnClick( Sender: TObject );
