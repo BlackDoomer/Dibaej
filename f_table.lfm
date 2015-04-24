@@ -1,7 +1,7 @@
 object TableForm: TTableForm
-  Left = 307
+  Left = 454
   Height = 400
-  Top = 514
+  Top = 253
   Width = 800
   ClientHeight = 400
   ClientWidth = 800
@@ -28,31 +28,51 @@ object TableForm: TTableForm
     TitleStyle = tsStandard
     OnTitleClick = DBGridTitleClick
   end
-  object CommitBtn: TButton
+  object AddEntryBtn: TButton
     Left = 488
     Height = 25
     Top = 367
-    Width = 75
+    Width = 27
+    Anchors = [akRight, akBottom]
+    Caption = '+'
+    OnClick = AddEntryBtnClick
+    TabOrder = 5
+  end
+  object EraseEntryBtn: TButton
+    Left = 520
+    Height = 25
+    Top = 367
+    Width = 27
+    Anchors = [akRight, akBottom]
+    Caption = '–'
+    OnClick = EraseEntryBtnClick
+    TabOrder = 6
+  end
+  object CommitBtn: TButton
+    Left = 592
+    Height = 25
+    Top = 367
+    Width = 59
     Anchors = [akRight, akBottom]
     Caption = 'Commit'
     OnClick = CommitBtnClick
     TabOrder = 1
   end
   object ResetBtn: TButton
-    Left = 568
+    Left = 656
     Height = 25
     Top = 367
-    Width = 75
+    Width = 59
     Anchors = [akRight, akBottom]
     Caption = 'Reset'
     OnClick = ResetBtnClick
     TabOrder = 2
   end
   object RefreshBtn: TButton
-    Left = 712
+    Left = 728
     Height = 25
     Top = 367
-    Width = 75
+    Width = 59
     Anchors = [akRight, akBottom]
     Caption = 'Refresh'
     OnClick = RefreshBtnClick
@@ -137,24 +157,24 @@ object TableForm: TTableForm
       TabOrder = 4
       Text = 'AND'
     end
-    object AddBtn: TButton
+    object AddFilterBtn: TButton
       Left = 137
       Height = 25
       Top = 304
       Width = 75
       Anchors = [akRight, akBottom]
       Caption = 'Add'
-      OnClick = AddBtnClick
+      OnClick = AddFilterBtnClick
       TabOrder = 6
     end
-    object ClearBtn: TButton
+    object ClearFiltersBtn: TButton
       Left = 216
       Height = 25
       Top = 304
       Width = 75
       Anchors = [akRight, akBottom]
       Caption = 'Clear'
-      OnClick = ClearBtnClick
+      OnClick = ClearFiltersBtnClick
       TabOrder = 7
     end
     object FiltersCheck: TCheckBox

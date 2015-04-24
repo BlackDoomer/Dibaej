@@ -23,20 +23,22 @@ type
 
   TTableForm = class( TForm )
   { interface controls }
-    DBGrid          : TDBGrid;
-    ResetBtn        : TButton;
-    CommitBtn       : TButton;
-    RefreshBtn      : TButton;
+    DBGrid              : TDBGrid;
+    AddEntryBtn         : TButton;
+    EraseEntryBtn       : TButton;
+    CommitBtn           : TButton;
+    ResetBtn            : TButton;
+    RefreshBtn          : TButton;
 
-    FiltersBox      : TGroupBox;
-      FiltersList   : TListBox;
-      ColumnsCB     : TComboBox;
-      OperationsCB  : TComboBox;
-      ConstEdit     : TEdit;
-      LogicCB       : TComboBox;
-      AddBtn        : TButton;
-      ClearBtn      : TButton;
-      FiltersCheck  : TCheckBox;
+    FiltersBox          : TGroupBox;
+      FiltersList       : TListBox;
+      ColumnsCB         : TComboBox;
+      OperationsCB      : TComboBox;
+      ConstEdit         : TEdit;
+      LogicCB           : TComboBox;
+      AddFilterBtn      : TButton;
+      ClearFiltersBtn   : TButton;
+      FiltersCheck      : TCheckBox;
 
 
   { database controls }
@@ -50,11 +52,13 @@ type
     procedure RefreshBtnClick( Sender: TObject );
     procedure DBGridTitleClick( Column: TColumn );
 
-    procedure AddBtnClick( Sender: TObject );
-    procedure ClearBtnClick( Sender: TObject );
+    procedure AddFilterBtnClick( Sender: TObject );
+    procedure ClearFiltersBtnClick( Sender: TObject );
     procedure FilterChange( Sender: TObject );
     procedure FiltersListSelectionChange( Sender: TObject; User: Boolean );
 
+    procedure AddEntryBtnClick( Sender: TObject );
+    procedure EraseEntryBtnClick( Sender: TObject );
     procedure DataSourceUpdateData( Sender: TObject );
 
   private
@@ -153,7 +157,7 @@ end;
 
 { FILTERS PROCESSING ========================================================= }
 
-procedure TTableForm.AddBtnClick( Sender: TObject );
+procedure TTableForm.AddFilterBtnClick( Sender: TObject );
 begin
   FFilterCount += 1;
   SetLength( FFilters, FFilterCount );
@@ -162,7 +166,7 @@ begin
   UpdateFilter( FFilterCount-1 );
 end;
 
-procedure TTableForm.ClearBtnClick( Sender: TObject );
+procedure TTableForm.ClearFiltersBtnClick( Sender: TObject );
 begin
   FFilterCount := 0;
   SetLength( FFilters, 0 );
@@ -198,6 +202,16 @@ begin
 end;
 
 { DATABASE EDITING ROUTINES ================================================== }
+
+procedure TTableForm.AddEntryBtnClick( Sender: TObject );
+begin
+  SQLQuery.Insert();
+end;
+
+procedure TTableForm.EraseEntryBtnClick( Sender: TObject );
+begin
+  SQLQuery.Delete();
+end;
 
 procedure TTableForm.DataSourceUpdateData( Sender: TObject );
 begin
