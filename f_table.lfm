@@ -1,7 +1,7 @@
 object TableForm: TTableForm
-  Left = 338
+  Left = 39
   Height = 400
-  Top = 469
+  Top = 465
   Width = 800
   ClientHeight = 400
   ClientWidth = 800
@@ -165,6 +165,7 @@ object TableForm: TTableForm
   end
   object DataSource: TDataSource
     DataSet = SQLQuery
+    OnUpdateData = DataSourceUpdateData
     left = 184
     top = 64
   end

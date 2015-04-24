@@ -46,17 +46,21 @@ type
     procedure RefreshBtnClick( Sender: TObject );
     procedure DBGridTitleClick( Column: TColumn );
 
-    procedure AddBtnClick(Sender: TObject);
+    procedure AddBtnClick( Sender: TObject );
     procedure ClearBtnClick( Sender: TObject );
     procedure FilterChange( Sender: TObject );
     procedure FiltersListSelectionChange( Sender: TObject; User: Boolean );
 
+    procedure DataSourceUpdateData( Sender: TObject );
+
   private
-    FFilters: array of TFilter;
-    FFilterCount: Integer;
-    FSortIndex: Integer;
-    FDescSort: Boolean;
-    procedure Fetch( UpdateCBs: Boolean = False );
+    FFilters : array of TFilter;
+    FFilterCount : Integer;
+    FSortIndex : Integer;
+    FDescSort : Boolean;
+    FDataEdited : Boolean;
+    procedure Fetch();
+    function DiscardChanges(): Boolean;
     procedure UpdateFilter( Index: Integer );
     function BuildFilter( Index: Integer; ForQuery: Boolean ): String;
   public
@@ -94,7 +98,8 @@ begin
       SQLQuery.DataBase := DBConnection;
       SQLTransaction.Active := True;
 
-      Fetch( True );
+      Fetch();
+      RegTable[Index].FillCombobox( ColumnsCB );
       Result := True;
     end;
   end;
@@ -106,9 +111,8 @@ end;
 procedure TTableForm.FormClose( Sender: TObject; var CloseAction: TCloseAction );
 begin
   { TODO 2 : Split commit and rollback onto two separate buttons in table form }
-  if not DBGrid.ReadOnly then
-    case MessageDlg( 'Would you like to apply your changes?' + LineEnding +
-                     '(if no changes were made, sorry me and press "No")',
+  if FDataEdited then
+    case MessageDlg( 'Would you like to apply your changes?',
                      mtConfirmation, mbYesNoCancel, 0 ) of
       mrYes: begin
         SQLQuery.ApplyUpdates();
@@ -130,41 +134,18 @@ begin
 end;
 
 procedure TTableForm.RefreshBtnClick( Sender: TObject );
-    begin Fetch();
-      end;
+begin
+  if DiscardChanges() then Fetch();
+end;
 
 procedure TTableForm.DBGridTitleClick( Column: TColumn );
 begin
   { TODO 2 : Improve sorting, add ability to select multiple columns }
-  FSortIndex := Column.Index;
-  FDescSort := not FDescSort;
-  Fetch();
-end;
-
-procedure TTableForm.Fetch( UpdateCBs: Boolean = False );
-var
-  QueryCmd : String;
-  i : Integer;
-begin
-  QueryCmd := RegTable[Tag].GetSelectSQL();
-
-  if FiltersCheck.Checked then
-    for i := 0 to FFilterCount-1 do begin
-      if (i = 0) then QueryCmd += ' where';
-      QueryCmd += ' ' + BuildFilter( i, True );
-    end;
-
-  if not ( FSortIndex = -1 ) then begin
-    QueryCmd += ' order by ' + IntToStr( FSortIndex );
-    if FDescSort then QueryCmd += ' desc';
+  if DiscardChanges() then begin
+    FSortIndex := Column.Index+1;
+    FDescSort := not FDescSort;
+    Fetch();
   end;
-
-  SQLQuery.Active := False;
-  SQLQuery.SQL.Text := QueryCmd;
-  SQLQuery.Active := True;
-
-  RegTable[Tag].AdjustDBGrid( DBGrid );  
-  if UpdateCBs then RegTable[Tag].FillCombobox( ColumnsCB );
 end;
 
 { FILTERS PROCESSING ========================================================= }
@@ -211,6 +192,50 @@ begin
     Logic := LogicCB.Text;
   end;
   FiltersList.Items.Strings[ Index ] := BuildFilter( Index, False );
+end;
+
+{ DATABASE EDITING ROUTINES ================================================== }
+
+procedure TTableForm.DataSourceUpdateData( Sender: TObject );
+begin
+  FDataEdited := True;
+end;
+
+function TTableForm.DiscardChanges(): Boolean;
+begin
+  if FDataEdited then
+    Result := MessageDlg( 'There are some uncommited changes, discard?',
+                          mtConfirmation, mbYesNo, 0 ) = mrYes
+  else
+    Result := True;
+end;
+
+{ DATABASE GRID FETCHING ROUTINES ============================================ }
+
+procedure TTableForm.Fetch();
+var
+  QueryCmd : String;
+  i : Integer;
+begin
+  QueryCmd := RegTable[Tag].GetSelectSQL();
+
+  if FiltersCheck.Checked then
+    for i := 0 to FFilterCount-1 do begin
+      if (i = 0) then QueryCmd += ' where';
+      QueryCmd += ' ' + BuildFilter( i, True );
+    end;
+
+  if not ( FSortIndex = -1 ) then begin
+    QueryCmd += ' order by ' + IntToStr( FSortIndex );
+    if FDescSort then QueryCmd += ' desc';
+  end;
+
+  SQLQuery.Active := False;
+  SQLQuery.SQL.Text := QueryCmd;
+  SQLQuery.Active := True;
+
+  RegTable[Tag].AdjustDBGrid( DBGrid );
+  FDataEdited := False;
 end;
 
 function TTableForm.BuildFilter( Index: Integer; ForQuery: Boolean ): String;
