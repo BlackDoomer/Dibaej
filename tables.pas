@@ -15,6 +15,7 @@ type
 
   //general column class
   TColumnInfo = record
+    UserEdit           : Boolean;     //is column could be edited by user
     Name               : String;      //if referenced, points to another table
     Caption            : String;      //if empty, Name will be used
     Width              : Byte;        //if 0, will be automatic
@@ -38,7 +39,8 @@ type
       function GetColumnCaption( ColInf: TColumnInfo ): String;
     public
       constructor Create( AName, ACaption: String );
-      procedure AddColumn( AName: String = 'ID'; ACaption: String = '';
+      procedure AddColumn( AUserEdit: Boolean = False;
+                           AName: String = 'ID'; ACaption: String = '';
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
       function GetSelectSQL(): String;
@@ -66,12 +68,14 @@ end;
 
 { COMMON ROUTINES ============================================================ }
 
-procedure TTableInfo.AddColumn( AName: String = 'ID'; ACaption: String = '';
+procedure TTableInfo.AddColumn( AUserEdit: Boolean = False;
+                                AName: String = 'ID'; ACaption: String = '';
                                 AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                                 AColKey: String = ''; ARefKey: String = 'ID' );
 begin
   SetLength( FColumns, Length(FColumns)+1 );
   with FColumns[ High( FColumns ) ] do begin
+    UserEdit := AUserEdit;
     Name := AName;
     Caption := ACaption;
     Width := AWidth;
@@ -127,7 +131,7 @@ begin
   end;
 end;
 
-function TTableInfo.ColumnCaption(Index: Integer): String;
+function TTableInfo.ColumnCaption( Index: Integer ): String;
    begin Result := GetColumnCaption( FColumns[Index] );
      end;
 
@@ -141,6 +145,8 @@ begin
 
   for i := 0 to High( FColumns ) do
     with DBGrid.Columns.Items[i] do begin
+      Field.Required := FColumns[i].UserEdit;
+      ReadOnly := not Field.Required;
       Title.Caption := GetColumnCaption( FColumns[i] );
       if ( FColumns[i].Width > 0 ) then
         Width := FColumns[i].Width;
