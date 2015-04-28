@@ -87,8 +87,8 @@ end;
 procedure TMainForm.ConnectItemClick( Sender: TObject );
 begin
   if IBConnection.Connected then begin
-    if not ( MessageDlg( 'Connection seems established, do you want to reconnect?',
-                          mtWarning, mbYesNo, 0 ) = mrYes ) then Exit;
+    if ( MessageDlg( 'Connection seems established, do you want to reconnect?',
+                     mtWarning, mbYesNo, 0 ) <> mrYes ) then Exit;
     IBConnection.Close( True );
 
     { okay, another Lazarus^W SQLdb bug again. if connection was interrupted,
@@ -148,7 +148,7 @@ begin
   end else
 
   if Separate then begin
-    if not ( LogMemo.Lines[ LogMemo.Lines.Count-1 ] = '' ) then
+    if ( LogMemo.Lines[ LogMemo.Lines.Count-1 ] <> '' ) then
       Report := LineEnding + Report;
     Report += LineEnding;
   end;

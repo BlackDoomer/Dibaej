@@ -235,15 +235,15 @@ begin
   if FiltersCheck.Checked then begin
     for i := 0 to FiltersList.Count-1 do begin
       FilterStr := BuildFilter( i, True );
-      if not ( FilterStr = '' ) then QueryCmd += ' ' + FilterStr;
+      if ( FilterStr <> '' ) then QueryCmd += ' ' + FilterStr;
     end;
-    if not ( QueryCmd = '' ) then
+    if ( QueryCmd <> '' ) then
       QueryCmd := ' where' + QueryCmd;
   end;
 
   QueryCmd := RegTable[Tag].GetSelectSQL() + QueryCmd;
 
-  if not ( FSortIndex = -1 ) then begin
+  if ( FSortIndex <> -1 ) then begin
     QueryCmd += ' order by ' + IntToStr( FSortIndex );
     if FDescSort then QueryCmd += ' desc';
   end;

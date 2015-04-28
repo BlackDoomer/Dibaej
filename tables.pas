@@ -83,7 +83,7 @@ begin
     ColKey := AColKey;
     RefKey := ARefKey;
   end;
-  if not ( ARefTable = nil ) then FReferenced := True;
+  if Assigned( ARefTable ) then FReferenced := True;
 end;
 
 function TTableInfo.GetSelectSQL(): String;
@@ -95,11 +95,11 @@ begin
   TableRefs := '';
 
   for ColInf in FColumns do begin
-    if not ( ColNames = '' ) then ColNames += ', ';
+    if ( ColNames <> '' ) then ColNames += ', ';
     ColNames += GetColumnName( ColInf );
 
     //support for table references
-    if not ( ColInf.RefTable = nil ) then
+    if Assigned( ColInf.RefTable ) then
       TableRefs += ' inner join ' + ColInf.RefTable.FName +
                    ' on ' + FName + '.' + ColInf.ColKey +
                    ' = ' + ColInf.RefTable.FName + '.' + ColInf.RefKey;
@@ -110,8 +110,8 @@ end;
 
 function TTableInfo.GetColumnName( ColInf: TColumnInfo ): String;
 begin
-  if ( ColInf.RefTable = nil ) then Result := FName
-                               else Result := ColInf.RefTable.FName;
+  if Assigned( ColInf.RefTable ) then Result := ColInf.RefTable.FName
+                                 else Result := FName;
   Result += '.' + ColInf.Name;
 end;
 
