@@ -266,7 +266,7 @@ begin
     QueryCmd += ' order by ' + IntToStr( FSortIndex );
     if FDescSort then QueryCmd += ' desc';
   end;
-ShowMessage(QueryCmd);
+
   SQLQuery.Active := False;
   SQLQuery.SQL.Text := QueryCmd;
   SQLQuery.Active := True;
