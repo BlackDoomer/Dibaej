@@ -49,6 +49,7 @@ type
       function GetSelectSQL(): String;
       function ColumnName( Index: Integer ): String;
       function ColumnCaption( Index: Integer ): String;
+      function ColumnDataType( Index: Integer ): TColumnDataType;
       procedure AdjustDBGrid( DBGrid: TDBGrid );
       procedure FillCombobox( ComboBox: TComboBox );
 
@@ -120,7 +121,7 @@ begin
   Result += '.' + ColInf.Name;
 end;
 
-function TTableInfo.ColumnName(Index: Integer): String;
+function TTableInfo.ColumnName( Index: Integer ): String;
    begin Result := GetColumnName( FColumns[Index] );
      end;
 
@@ -138,6 +139,10 @@ end;
 
 function TTableInfo.ColumnCaption( Index: Integer ): String;
    begin Result := GetColumnCaption( FColumns[Index] );
+     end;
+
+function TTableInfo.ColumnDataType( Index: Integer ): TColumnDataType;
+   begin Result := FColumns[Index].DataType;
      end;
 
 //sets predefined columns captions and widths

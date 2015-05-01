@@ -74,6 +74,7 @@ type
   end;
 
   function ShowTableForm( Index: Integer; DBConnection: TSQLConnection ): Boolean;
+  function ExtractIntFromStr( Str: String ): String;
 
 var
   TableForm : array of TTableForm;
@@ -278,21 +279,32 @@ end;
 function TTableForm.BuildFilter( Index: Integer; ForQuery: Boolean ): String;
 begin
   with FFilters[ Index ] do begin
-    { FIXME : If last filter doesn't have constant, query will be corrupted
-              (will be fixed when empty constant will became valuable too) }
     if ForQuery then Result := RegTable[Tag].ColumnName( Column )
                 else Result := RegTable[Tag].ColumnCaption( Column );
 
     Result += ' ' + OperationsCB.Items.Strings[Operation] + ' ';
 
-    if ( Constant = '' ) then begin
-      if ForQuery then Exit('') else Result += '?';
-    end else begin
-      Result += Constant;
-    end;
+    if ( RegTable[Tag].ColumnDataType( Column ) = DT_STRING ) then
+      Result += '''' + Constant + ''''
+    else
+      Result += ExtractIntFromStr( Constant );
 
     if not ForQuery or ( Index < FiltersCList.Count-1 ) then
       Result += ' ' + LogicCB.Items.Strings[Logic];
+  end;
+end;
+
+{ COMMON ROUTINES ============================================================ }
+
+function ExtractIntFromStr( Str: String ): String;
+var
+  i : Char;
+begin
+  Result := '';
+  for i in Str do
+    if i in ['0'..'9'] then Result += i;
+  try    Result := IntToStr( StrToInt( Result ) );
+  except Result := '0';
   end;
 end;
 
