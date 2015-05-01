@@ -11,6 +11,7 @@ uses
 
 type
 
+  TColumnDataType = ( DT_NUMERIC, DT_STRING );
   TTableInfo = class;
 
   //general column class
@@ -18,6 +19,7 @@ type
     UserEdit           : Boolean;     //is column could be edited by user
     Name               : String;      //if referenced, points to another table
     Caption            : String;      //if empty, Name will be used
+    DataType           : TColumnDataType;
     Width              : Byte;        //if 0, will be automatic
     RefTable           : TTableInfo;  //is that column is from another table?
     ColKey             : String;      //joining key in our table
@@ -41,6 +43,7 @@ type
       constructor Create( AName, ACaption: String );
       procedure AddColumn( AUserEdit: Boolean = False;
                            AName: String = 'ID'; ACaption: String = '';
+                           ADataType: TColumnDataType = DT_NUMERIC;
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
       function GetSelectSQL(): String;
@@ -70,6 +73,7 @@ end;
 
 procedure TTableInfo.AddColumn( AUserEdit: Boolean = False;
                                 AName: String = 'ID'; ACaption: String = '';
+                                ADataType: TColumnDataType = DT_NUMERIC;
                                 AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                                 AColKey: String = ''; ARefKey: String = 'ID' );
 begin
@@ -78,6 +82,7 @@ begin
     UserEdit := AUserEdit;
     Name := AName;
     Caption := ACaption;
+    DataType := ADataType;
     Width := AWidth;
     RefTable := ARefTable;
     ColKey := AColKey;
