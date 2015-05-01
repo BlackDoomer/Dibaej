@@ -8,15 +8,15 @@ interface
 uses
   SysUtils, Classes,
   Forms, Controls, Dialogs, StdCtrls,
-  SQLdb, db, DBGrids;
+  SQLdb, db, DBGrids, CheckLst;
 
 type
   
   TFilter = record
     Column: Integer;
-    Operation: String;
+    Operation: Integer;
     Constant: String;
-    Logic: String;
+    Logic: Integer;
   end;
   
   { TTableForm }
@@ -31,7 +31,7 @@ type
     RefreshBtn          : TButton;
 
     FiltersBox          : TGroupBox;
-      FiltersList       : TListBox;
+      FiltersCList      : TCheckListBox;
       ColumnsCB         : TComboBox;
       OperationsCB      : TComboBox;
       ConstEdit         : TEdit;
@@ -39,7 +39,6 @@ type
       AddFilterBtn      : TButton;
       ClearFiltersBtn   : TButton;
       FiltersCheck      : TCheckBox;
-
 
   { database controls }
     SQLTransaction  : TSQLTransaction;
@@ -54,8 +53,8 @@ type
 
     procedure AddFilterBtnClick( Sender: TObject );
     procedure ClearFiltersBtnClick( Sender: TObject );
+    procedure FiltersCListClick( Sender: TObject );
     procedure FilterChange( Sender: TObject );
-    procedure FiltersListSelectionChange( Sender: TObject; User: Boolean );
 
     procedure AddEntryBtnClick( Sender: TObject );
     procedure EraseEntryBtnClick( Sender: TObject );
@@ -158,44 +157,62 @@ end;
 
 procedure TTableForm.AddFilterBtnClick( Sender: TObject );
 begin
-  FiltersList.Items.Add('');
-  SetLength( FFilters, FiltersList.Count );
-  FiltersList.ItemIndex := FiltersList.Count-1;
-  UpdateFilter( FiltersList.Count-1 );
+  SetLength( FFilters, FiltersCList.Count+1 );
+
+  //we disallow to disable last filter because we need it always enabled
+  //because it closes WHERE statement due to lack of logic statement afterwards
+  if ( FiltersCList.Count > 0 ) then
+    FiltersCList.ItemEnabled[ FiltersCList.Count-1 ] := True;
+
+  FiltersCList.Items.Add('');
+
+  FiltersCList.Checked[ FiltersCList.Count-1 ] := True;
+  FiltersCList.ItemEnabled[ FiltersCList.Count-1 ] := False;
+
+  FiltersCList.ItemIndex := FiltersCList.Count-1;
+  UpdateFilter( FiltersCList.Count-1 );
 end;
 
 procedure TTableForm.ClearFiltersBtnClick( Sender: TObject );
 begin
+  FiltersCList.Clear();
   SetLength( FFilters, 0 );
-  FiltersList.Clear();
 end;
 
 procedure TTableForm.FilterChange( Sender: TObject );
 begin
-  if ( FiltersList.Count > 0 ) then
-    UpdateFilter( FiltersList.ItemIndex );
+  UpdateFilter( FiltersCList.ItemIndex );
 end;
 
-procedure TTableForm.FiltersListSelectionChange( Sender: TObject; User: Boolean );
+procedure TTableForm.FiltersCListClick( Sender: TObject );
 begin
-  if User then
-    with FFilters[ FiltersList.ItemIndex ] do begin
-      ColumnsCB.ItemIndex := Column;
-      OperationsCB.Text := Operation;
-      ConstEdit.Text := Constant;
-      LogicCB.Text := Logic;
-    end;
+  if ( FiltersCList.ItemIndex < 0 ) then Exit;
+
+  //to prevent updating on fields changing
+  FiltersCList.Enabled := False;
+  
+  with FFilters[ FiltersCList.ItemIndex ] do begin
+    ColumnsCB.ItemIndex := Column;
+    OperationsCB.ItemIndex := Operation;
+    ConstEdit.Text := Constant;
+    LogicCB.ItemIndex := Logic;
+  end;
+
+  FiltersCList.Enabled := True;
 end;
 
 procedure TTableForm.UpdateFilter( Index: Integer );
 begin
+  if not FiltersCList.Enabled or ( Index < 0 ) then Exit;
+
   with FFilters[ Index ] do begin
     Column := ColumnsCB.ItemIndex;
-    Operation := OperationsCB.Text;
+    Operation := OperationsCB.ItemIndex;
     Constant := ConstEdit.Text;
-    Logic := LogicCB.Text;
+    Logic := LogicCB.ItemIndex;
   end;
-  FiltersList.Items.Strings[ Index ] := BuildFilter( Index, False );
+
+  FiltersCList.Items.Strings[ Index ] := BuildFilter( Index, False );
 end;
 
 { DATABASE EDITING ROUTINES ================================================== }
@@ -233,9 +250,11 @@ var
 begin
   QueryCmd := '';
   if FiltersCheck.Checked then begin
-    for i := 0 to FiltersList.Count-1 do begin
-      FilterStr := BuildFilter( i, True );
-      if ( FilterStr <> '' ) then QueryCmd += ' ' + FilterStr;
+    for i := 0 to FiltersCList.Count-1 do begin
+      if ( FiltersCList.Checked[i] ) then begin
+        FilterStr := BuildFilter( i, True );
+        if ( FilterStr <> '' ) then QueryCmd += ' ' + FilterStr;
+      end;
     end;
     if ( QueryCmd <> '' ) then
       QueryCmd := ' where' + QueryCmd;
@@ -247,7 +266,7 @@ begin
     QueryCmd += ' order by ' + IntToStr( FSortIndex );
     if FDescSort then QueryCmd += ' desc';
   end;
-
+ShowMessage(QueryCmd);
   SQLQuery.Active := False;
   SQLQuery.SQL.Text := QueryCmd;
   SQLQuery.Active := True;
@@ -259,10 +278,12 @@ end;
 function TTableForm.BuildFilter( Index: Integer; ForQuery: Boolean ): String;
 begin
   with FFilters[ Index ] do begin
+    { FIXME : If last filter doesn't have constant, query will be corrupted
+              (will be fixed when empty constant will became valuable too) }
     if ForQuery then Result := RegTable[Tag].ColumnName( Column )
                 else Result := RegTable[Tag].ColumnCaption( Column );
 
-    Result += ' ' + Operation + ' ';
+    Result += ' ' + OperationsCB.Items.Strings[Operation] + ' ';
 
     if ( Constant = '' ) then begin
       if ForQuery then Exit('') else Result += '?';
@@ -270,8 +291,8 @@ begin
       Result += Constant;
     end;
 
-    if not ForQuery or ( Index < FiltersList.Count-1 ) then
-      Result += ' ' + Logic;
+    if not ForQuery or ( Index < FiltersCList.Count-1 ) then
+      Result += ' ' + LogicCB.Items.Strings[Logic];
   end;
 end;
 

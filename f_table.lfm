@@ -1,7 +1,7 @@
 object TableForm: TTableForm
-  Left = 335
+  Left = 390
   Height = 400
-  Top = 193
+  Top = 393
   Width = 800
   ClientHeight = 400
   ClientWidth = 800
@@ -88,15 +88,15 @@ object TableForm: TTableForm
     ClientHeight = 334
     ClientWidth = 308
     TabOrder = 4
-    object FiltersList: TListBox
+    object FiltersCList: TCheckListBox
       Left = 8
       Height = 240
       Top = 0
       Width = 292
       Anchors = [akTop, akLeft, akRight, akBottom]
       ItemHeight = 0
-      OnSelectionChange = FiltersListSelectionChange
-      TabOrder = 0
+      OnClick = FiltersCListClick
+      TabOrder = 7
     end
     object ColumnsCB: TComboBox
       Left = 8
@@ -107,7 +107,7 @@ object TableForm: TTableForm
       ItemHeight = 13
       OnChange = FilterChange
       Style = csDropDownList
-      TabOrder = 1
+      TabOrder = 0
     end
     object OperationsCB: TComboBox
       Left = 224
@@ -128,7 +128,7 @@ object TableForm: TTableForm
       )
       OnChange = FilterChange
       Style = csDropDownList
-      TabOrder = 2
+      TabOrder = 1
       Text = '='
     end
     object ConstEdit: TEdit
@@ -138,7 +138,7 @@ object TableForm: TTableForm
       Width = 204
       Anchors = [akRight, akBottom]
       OnChange = FilterChange
-      TabOrder = 3
+      TabOrder = 2
     end
     object LogicCB: TComboBox
       Left = 224
@@ -154,7 +154,7 @@ object TableForm: TTableForm
       )
       OnChange = FilterChange
       Style = csDropDownList
-      TabOrder = 4
+      TabOrder = 3
       Text = 'AND'
     end
     object AddFilterBtn: TButton
@@ -165,7 +165,7 @@ object TableForm: TTableForm
       Anchors = [akRight, akBottom]
       Caption = 'Add'
       OnClick = AddFilterBtnClick
-      TabOrder = 6
+      TabOrder = 5
     end
     object ClearFiltersBtn: TButton
       Left = 232
@@ -175,7 +175,7 @@ object TableForm: TTableForm
       Anchors = [akRight, akBottom]
       Caption = 'Clear'
       OnClick = ClearFiltersBtnClick
-      TabOrder = 7
+      TabOrder = 6
     end
     object FiltersCheck: TCheckBox
       Left = 40
@@ -186,7 +186,7 @@ object TableForm: TTableForm
       Caption = 'Enable filters'
       Checked = True
       State = cbChecked
-      TabOrder = 5
+      TabOrder = 4
     end
   end
   object SQLTransaction: TSQLTransaction
