@@ -159,19 +159,10 @@ end;
 procedure TTableForm.AddFilterBtnClick( Sender: TObject );
 begin
   SetLength( FFilters, FiltersCList.Count+1 );
-
-  //we disallow to disable last filter because we need it always enabled
-  //because it closes WHERE statement due to lack of logic statement afterwards
-  if ( FiltersCList.Count > 0 ) then
-    FiltersCList.ItemEnabled[ FiltersCList.Count-1 ] := True;
-
   FiltersCList.Items.Add('');
-
-  FiltersCList.Checked[ FiltersCList.Count-1 ] := True;
-  FiltersCList.ItemEnabled[ FiltersCList.Count-1 ] := False;
-
   FiltersCList.ItemIndex := FiltersCList.Count-1;
-  UpdateFilter( FiltersCList.Count-1 );
+  FiltersCList.Checked[ FiltersCList.ItemIndex ] := True;
+  UpdateFilter( FiltersCList.ItemIndex );
 end;
 
 procedure TTableForm.ClearFiltersBtnClick( Sender: TObject );
@@ -289,8 +280,12 @@ begin
     else
       Result += ExtractIntFromStr( Constant );
 
-    if not ForQuery or ( Index < FiltersCList.Count-1 ) then
+    if ForQuery then begin // A + OP B + OP C ...
+      if ( Index > 0 ) then
+        Result := LogicCB.Items.Strings[Logic] + ' ' + Result;
+    end else begin // A OP + B OP + C OP ...
       Result += ' ' + LogicCB.Items.Strings[Logic];
+    end;
   end;
 end;
 
