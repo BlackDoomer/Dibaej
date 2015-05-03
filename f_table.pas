@@ -7,18 +7,12 @@ interface
 
 uses
   SysUtils, Classes,
-  Forms, Controls, Dialogs, StdCtrls,
-  SQLdb, db, DBGrids, CheckLst;
+  Forms, Controls, Dialogs, StdCtrls, CheckLst,
+  SQLdb, db, DBGrids,
+  filters;
 
 type
-  
-  TFilter = record
-    Column: Integer;
-    Operation: Integer;
-    Constant: String;
-    Logic: Integer;
-  end;
-  
+
   { TTableForm }
 
   TTableForm = class( TForm )
@@ -61,21 +55,19 @@ type
     procedure DataSourceUpdateData( Sender: TObject );
 
   private
-    FFilters : array of TFilter;
+    FFilters : TFilterContext;
     FSortIndex : Integer;
     FDescSort : Boolean;
     FDataEdited : Boolean;
     procedure Fetch();
     function DiscardChanges(): Boolean;
     procedure UpdateFilter( Index: Integer );
-    function BuildFilter( Index: Integer; ForQuery: Boolean;
-                          AddLogic: Boolean = True ): String;
+
   public
     { public declarations }
   end;
 
   function ShowTableForm( Index: Integer; DBConnection: TSQLConnection ): Boolean;
-  function ExtractIntFromStr( Str: String ): String;
 
 var
   TableForm : array of TTableForm;
@@ -98,16 +90,22 @@ begin
     with TableForm[Index] do begin
       Tag := Index;
       Caption := RegTable[Index].Caption;
-
       FSortIndex := -1;
       FDescSort := True; //will be set to FALSE on first sorting
 
+      FFilters := TFilterContext.Create( Index );
       SQLTransaction.DataBase := DBConnection;
       SQLQuery.DataBase := DBConnection;
       SQLTransaction.Active := True;
-
       Fetch();
-      RegTable[Index].FillCombobox( ColumnsCB );
+
+      RegTable[Index].GetColumns( ColumnsCB.Items );
+      ColumnsCB.ItemIndex := 0;
+      OperationsCB.Items.AddStrings( FilterOperations );
+      OperationsCB.ItemIndex := 0;
+      LogicCB.Items.AddStrings( FilterLogic );
+      LogicCB.ItemIndex := 0;
+
       Result := True;
     end;
   end;
@@ -159,7 +157,7 @@ end;
 
 procedure TTableForm.AddFilterBtnClick( Sender: TObject );
 begin
-  SetLength( FFilters, FiltersCList.Count+1 );
+  FFilters.Add();
   FiltersCList.Items.Add('');
   FiltersCList.ItemIndex := FiltersCList.Count-1;
   FiltersCList.Checked[ FiltersCList.ItemIndex ] := True;
@@ -169,7 +167,7 @@ end;
 procedure TTableForm.ClearFiltersBtnClick( Sender: TObject );
 begin
   FiltersCList.Clear();
-  SetLength( FFilters, 0 );
+  FFilters.Clear();
 end;
 
 procedure TTableForm.FilterChange( Sender: TObject );
@@ -183,8 +181,8 @@ begin
 
   //to prevent updating on fields changing
   FiltersCList.Enabled := False;
-  
-  with FFilters[ FiltersCList.ItemIndex ] do begin
+
+  with FFilters.GetFilter( FiltersCList.ItemIndex ) do begin
     ColumnsCB.ItemIndex := Column;
     OperationsCB.ItemIndex := Operation;
     ConstEdit.Text := Constant;
@@ -197,15 +195,9 @@ end;
 procedure TTableForm.UpdateFilter( Index: Integer );
 begin
   if not FiltersCList.Enabled or ( Index < 0 ) then Exit;
-
-  with FFilters[ Index ] do begin
-    Column := ColumnsCB.ItemIndex;
-    Operation := OperationsCB.ItemIndex;
-    Constant := ConstEdit.Text;
-    Logic := LogicCB.ItemIndex;
-  end;
-
-  FiltersCList.Items.Strings[ Index ] := BuildFilter( Index, False );
+  FFilters.Update( Index, ColumnsCB.ItemIndex, OperationsCB.ItemIndex,
+    ConstEdit.Text, LogicCB.ItemIndex );
+  FiltersCList.Items.Strings[Index] := FFilters.GetSQL( Index, False );
 end;
 
 { DATABASE EDITING ROUTINES ================================================== }
@@ -238,15 +230,17 @@ end;
 
 procedure TTableForm.Fetch();
 var
-  QueryCmd, FilterStr : String;
-  i : Integer;
+  QueryCmd : String;
+  i, param : Integer;
 begin
   QueryCmd := '';
   if FiltersCheck.Checked then begin
+    param := 0;
     for i := 0 to FiltersCList.Count-1 do begin
       if ( FiltersCList.Checked[i] ) then begin
-        FilterStr := BuildFilter( i, True, QueryCmd <> '' );
-        if ( FilterStr <> '' ) then QueryCmd += ' ' + FilterStr;
+        QueryCmd += ' ' + FFilters.GetSQL( i, True, QueryCmd <> '' ) + ':'
+          + IntToStr(param);
+        param += 1;
       end;
     end;
     if ( QueryCmd <> '' ) then
@@ -262,47 +256,23 @@ begin
 
   SQLQuery.Active := False;
   SQLQuery.SQL.Text := QueryCmd;
-  SQLQuery.Active := True;
-
-  RegTable[Tag].AdjustDBGrid( DBGrid );
-  FDataEdited := False;
-end;
-
-function TTableForm.BuildFilter( Index: Integer; ForQuery: Boolean;
-                                 AddLogic: Boolean = True ): String;
-begin
-  with FFilters[ Index ] do begin
-    if ForQuery then Result := RegTable[Tag].ColumnName( Column )
-                else Result := RegTable[Tag].ColumnCaption( Column );
-
-    Result += ' ' + OperationsCB.Items.Strings[Operation] + ' ';
-
-    if ( RegTable[Tag].ColumnDataType( Column ) = DT_STRING ) then
-      Result += '''' + Constant + ''''
-    else
-      Result += ExtractIntFromStr( Constant );
-
-    if AddLogic then begin
-      if ForQuery then // A + OP B + OP C ...
-        Result := LogicCB.Items.Strings[Logic] + ' ' + Result
-      else // A OP + B OP + C OP ...
-        Result += ' ' + LogicCB.Items.Strings[Logic];
+  if ( param > 0 ) then begin
+    param := 0;
+    for i := 0 to FiltersCList.Count-1 do begin
+      if ( FiltersCList.Checked[i] ) then begin
+        with SQLQuery.ParamByName( IntToStr(param) ) do begin
+          AsString := FFilters.GetConst(i);
+          if ( RegTable[Tag].ColumnDataType( FFilters.GetFilter(i).Column ) = DT_NUMERIC ) then
+            DataType := ftInteger;
+        end;
+        param += 1;
+      end;
     end;
   end;
-end;
 
-{ COMMON ROUTINES ============================================================ }
-
-function ExtractIntFromStr( Str: String ): String;
-var
-  i : Char;
-begin
-  Result := '';
-  for i in Str do
-    if i in ['0'..'9'] then Result += i;
-  try    Result := IntToStr( StrToInt( Result ) );
-  except Result := '0';
-  end;
+  SQLQuery.Active := True;
+  RegTable[Tag].AdjustDBGrid( DBGrid );
+  FDataEdited := False;
 end;
 
 end.

@@ -7,7 +7,7 @@ interface
 
 uses
   SysUtils, Classes,
-  StdCtrls, DBGrids;
+  DBGrids;
 
 type
 
@@ -41,8 +41,8 @@ type
       function GetColumnCaption( ColInf: TColumnInfo ): String;
     public
       constructor Create( AName, ACaption: String );
-      procedure AddColumn( AUserEdit: Boolean = False;
-                           AName: String = 'ID'; ACaption: String = '';
+      procedure AddColumn( AEditable: Boolean = False;
+                           AName: String = 'ID'; ACaption: String = 'ID';
                            ADataType: TColumnDataType = DT_NUMERIC;
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
@@ -51,7 +51,7 @@ type
       function ColumnCaption( Index: Integer ): String;
       function ColumnDataType( Index: Integer ): TColumnDataType;
       procedure AdjustDBGrid( DBGrid: TDBGrid );
-      procedure FillCombobox( ComboBox: TComboBox );
+      procedure GetColumns( Strings: TStrings );
 
       property Caption: String read FCaption;
   end;
@@ -72,15 +72,15 @@ end;
 
 { COMMON ROUTINES ============================================================ }
 
-procedure TTableInfo.AddColumn( AUserEdit: Boolean = False;
-                                AName: String = 'ID'; ACaption: String = '';
+procedure TTableInfo.AddColumn( AEditable: Boolean = False;
+                                AName: String = 'ID'; ACaption: String = 'ID';
                                 ADataType: TColumnDataType = DT_NUMERIC;
                                 AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                                 AColKey: String = ''; ARefKey: String = 'ID' );
 begin
   SetLength( FColumns, Length(FColumns)+1 );
   with FColumns[ High( FColumns ) ] do begin
-    UserEdit := AUserEdit;
+    UserEdit := AEditable;
     Name := AName;
     Caption := ACaption;
     DataType := ADataType;
@@ -151,7 +151,10 @@ var
   i : Integer;
 begin
   { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
-  DBGrid.ReadOnly := FReferenced;
+  if FReferenced then begin
+    DBGrid.ReadOnly := False;
+    DBGrid.Options := DBGrid.Options + [dgRowSelect] - [dgEditing];
+  end;
 
   for i := 0 to High( FColumns ) do
     with DBGrid.Columns.Items[i] do begin
@@ -163,15 +166,14 @@ begin
     end;
 end;
 
-//fills specified combobox with columns captions
-procedure TTableInfo.FillCombobox( ComboBox: TComboBox );
+//fills specified TStrings with columns captions
+procedure TTableInfo.GetColumns( Strings: TStrings );
 var
   ColInf : TColumnInfo;
 begin
-  ComboBox.Clear();
+  Strings.Clear();
   for ColInf in FColumns do
-    ComboBox.Items.Add( GetColumnCaption( ColInf ) );
-  ComboBox.ItemIndex := 0;
+    Strings.Add( GetColumnCaption( ColInf ) );
 end;
 
 end.

@@ -22,7 +22,7 @@ object TableForm: TTableForm
     Columns = <>
     DataSource = DataSource
     Flat = True
-    Options = [dgEditing, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgAlwaysShowSelection, dgConfirmDelete, dgHeaderHotTracking, dgAutoSizeColumns, dgTruncCellHints, dgRowHighlight, dgThumbTracking]
+    Options = [dgEditing, dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgAlwaysShowSelection, dgConfirmDelete, dgHeaderHotTracking, dgAutoSizeColumns, dgTruncCellHints, dgCellEllipsis, dgRowHighlight, dgThumbTracking]
     OptionsExtra = [dgeAutoColumns]
     TabOrder = 0
     TitleStyle = tsStandard
@@ -116,19 +116,9 @@ object TableForm: TTableForm
       Width = 76
       Anchors = [akRight, akBottom]
       ItemHeight = 13
-      ItemIndex = 0
-      Items.Strings = (
-        '='
-        '<>'
-        '>'
-        '>='
-        '<'
-        '<='
-      )
       OnChange = FilterChange
       Style = csDropDownList
       TabOrder = 1
-      Text = '='
     end
     object ConstEdit: TEdit
       Left = 8
@@ -146,15 +136,9 @@ object TableForm: TTableForm
       Width = 76
       Anchors = [akRight, akBottom]
       ItemHeight = 13
-      ItemIndex = 0
-      Items.Strings = (
-        'AND'
-        'OR'
-      )
       OnChange = FilterChange
       Style = csDropDownList
       TabOrder = 3
-      Text = 'AND'
     end
     object AddFilterBtn: TButton
       Left = 160
