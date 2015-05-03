@@ -121,7 +121,7 @@ function TFilterContext.GetConst( Index: Integer; Brackets: Boolean = False ): S
 
 begin
   with FFilters[Index] do begin
-    if ( RegTable[FTable].ColumnDataType( Column ) = DT_STRING ) then begin
+    if ( RegTable[FTable].Columns(Column).DataType = DT_STRING ) then begin
       Result := Constant;
       if Brackets then Result := '''' + Result + '''';
     end else

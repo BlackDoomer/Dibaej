@@ -6,8 +6,7 @@ unit tables;
 interface
 
 uses
-  SysUtils, Classes,
-  DBGrids;
+  SysUtils, Classes;
 
 type
 
@@ -35,6 +34,7 @@ type
       FName          : String;
       FCaption       : String;
       FColumns       : array of TColumnInfo;
+      FColumnsNum    : Integer;
       FReferenced    : Boolean;
 
       function GetColumnName( ColInf: TColumnInfo ): String;
@@ -47,13 +47,14 @@ type
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
       function GetSelectSQL(): String;
+      function Columns( Index: Integer ): TColumnInfo;
       function ColumnName( Index: Integer ): String;
       function ColumnCaption( Index: Integer ): String;
-      function ColumnDataType( Index: Integer ): TColumnDataType;
-      procedure AdjustDBGrid( DBGrid: TDBGrid );
       procedure GetColumns( Strings: TStrings );
 
       property Caption: String read FCaption;
+      property ColumnsNum: Integer read FColumnsNum;
+      
   end;
 
 var
@@ -65,6 +66,7 @@ constructor TTableInfo.Create( AName, ACaption: String );
 begin
   FName := AName;
   FCaption := ACaption;
+  FColumnsNum := 0;
   FReferenced := False;
   SetLength( RegTable, Length(RegTable)+1 );
   RegTable[ High(RegTable) ] := Self;
@@ -78,8 +80,9 @@ procedure TTableInfo.AddColumn( AEditable: Boolean = False;
                                 AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                                 AColKey: String = ''; ARefKey: String = 'ID' );
 begin
-  SetLength( FColumns, Length(FColumns)+1 );
-  with FColumns[ High( FColumns ) ] do begin
+  FColumnsNum += 1;
+  SetLength( FColumns, FColumnsNum );
+  with FColumns[ FColumnsNum-1 ] do begin
     UserEdit := AEditable;
     Name := AName;
     Caption := ACaption;
@@ -114,6 +117,13 @@ begin
   Result := 'select ' + ColNames + ' from ' + FName + TableRefs;
 end;
 
+{ COLUMNS ROUTINES =========================================================== }
+
+function TTableInfo.Columns(Index: Integer): TColumnInfo;
+begin
+  Result := FColumns[Index];
+end;
+
 function TTableInfo.GetColumnName( ColInf: TColumnInfo ): String;
 begin
   if Assigned( ColInf.RefTable ) then Result := ColInf.RefTable.FName
@@ -140,31 +150,6 @@ end;
 function TTableInfo.ColumnCaption( Index: Integer ): String;
    begin Result := GetColumnCaption( FColumns[Index] );
      end;
-
-function TTableInfo.ColumnDataType( Index: Integer ): TColumnDataType;
-   begin Result := FColumns[Index].DataType;
-     end;
-
-//sets predefined columns captions and widths
-procedure TTableInfo.AdjustDBGrid( DBGrid: TDBGrid );
-var
-  i : Integer;
-begin
-  { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
-  if FReferenced then begin
-    DBGrid.ReadOnly := False;
-    DBGrid.Options := DBGrid.Options + [dgRowSelect] - [dgEditing];
-  end;
-
-  for i := 0 to High( FColumns ) do
-    with DBGrid.Columns.Items[i] do begin
-      Field.Required := FColumns[i].UserEdit;
-      ReadOnly := not Field.Required;
-      Title.Caption := GetColumnCaption( FColumns[i] );
-      if ( FColumns[i].Width > 0 ) then
-        Width := FColumns[i].Width;
-    end;
-end;
 
 //fills specified TStrings with columns captions
 procedure TTableInfo.GetColumns( Strings: TStrings );

@@ -60,6 +60,7 @@ type
     FDescSort : Boolean;
     FDataEdited : Boolean;
     procedure Fetch();
+    procedure AdjustControls();
     function DiscardChanges(): Boolean;
     procedure UpdateFilter( Index: Integer );
 
@@ -262,7 +263,7 @@ begin
       if ( FiltersCList.Checked[i] ) then begin
         with SQLQuery.ParamByName( IntToStr(param) ) do begin
           AsString := FFilters.GetConst(i);
-          if ( RegTable[Tag].ColumnDataType( FFilters.GetFilter(i).Column ) = DT_NUMERIC ) then
+          if ( RegTable[Tag].Columns( FFilters.GetFilter(i).Column ).DataType = DT_NUMERIC ) then
             DataType := ftInteger;
         end;
         param += 1;
@@ -271,8 +272,28 @@ begin
   end;
 
   SQLQuery.Active := True;
-  RegTable[Tag].AdjustDBGrid( DBGrid );
+  AdjustControls();
   FDataEdited := False;
+end;
+
+procedure TTableForm.AdjustControls();
+var
+  i : Integer;
+begin
+  { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
+  if not SQLQuery.CanModify then begin
+    DBGrid.ReadOnly := True;
+    DBGrid.Options := DBGrid.Options + [dgRowSelect] - [dgEditing];
+  end;
+
+  for i := 0 to RegTable[Tag].ColumnsNum-1 do
+    with DBGrid.Columns.Items[i] do begin
+      Field.Required := RegTable[Self.Tag].Columns(i).UserEdit;
+      ReadOnly := not Field.Required;
+      Title.Caption := RegTable[Self.Tag].ColumnCaption(i);
+      if ( RegTable[Self.Tag].Columns(i).Width > 0 ) then
+        Width := RegTable[Self.Tag].Columns(i).Width;
+    end;
 end;
 
 end.
