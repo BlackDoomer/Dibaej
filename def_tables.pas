@@ -65,6 +65,7 @@ tblGroupsSubjects := TTableInfo.Create( 'GROUPS_SUBJECTS', 'Groups subjects' );
 with tblGroupsSubjects do begin
   //AddColumn( True,   'GROUP_ID', 'Group ID',   DT_NUMERIC );
   //AddColumn( True, 'SUBJECT_ID', 'Subject ID', DT_NUMERIC );
+  AddColumn();
   AddColumn( True, 'NAME', 'Group No.', DT_STRING, 0, tblGroups,     'GROUP_ID' );
   AddColumn( True, 'NAME', 'Subject',   DT_STRING, 192, tblSubjects, 'SUBJECT_ID' );
 end;
@@ -73,12 +74,14 @@ tblTeachersSubjects := TTableInfo.Create( 'TEACHERS_SUBJECTS', 'Teachers subject
 with tblTeachersSubjects do begin
   //AddColumn( True, 'TEACHER_ID', 'Teacher ID', DT_NUMERIC );
   //AddColumn( True, 'SUBJECT_ID', 'Subject ID', DT_NUMERIC );
+  AddColumn();  
   AddColumn( True, 'NAME', 'Teacher', DT_STRING, 192, tblTeachers, 'TEACHER_ID' );
   AddColumn( True, 'NAME', 'Subject', DT_STRING, 192, tblSubjects, 'SUBJECT_ID' );
 end;
 
 tblSummary := TTableInfo.Create( 'LESSONS', '-= Timetable Summary =-' );
 with tblSummary do begin
+  AddColumn();
   AddColumn( True, 'PAIR_ID', 'Pair No.',  DT_NUMERIC );
   AddColumn( True, 'WEEKDAY', 'Weekday',   DT_STRING, 0,   tblWeekday,    'WEEKDAY_ID' );
   AddColumn( True,    'NAME', 'Group No.', DT_STRING, 0,   tblGroups,     'GROUP_ID'   );
