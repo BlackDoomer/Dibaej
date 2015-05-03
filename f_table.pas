@@ -68,7 +68,8 @@ type
     procedure Fetch();
     function DiscardChanges(): Boolean;
     procedure UpdateFilter( Index: Integer );
-    function BuildFilter( Index: Integer; ForQuery: Boolean ): String;
+    function BuildFilter( Index: Integer; ForQuery: Boolean;
+                          AddLogic: Boolean = True ): String;
   public
     { public declarations }
   end;
@@ -244,7 +245,7 @@ begin
   if FiltersCheck.Checked then begin
     for i := 0 to FiltersCList.Count-1 do begin
       if ( FiltersCList.Checked[i] ) then begin
-        FilterStr := BuildFilter( i, True );
+        FilterStr := BuildFilter( i, True, QueryCmd <> '' );
         if ( FilterStr <> '' ) then QueryCmd += ' ' + FilterStr;
       end;
     end;
@@ -267,7 +268,8 @@ begin
   FDataEdited := False;
 end;
 
-function TTableForm.BuildFilter( Index: Integer; ForQuery: Boolean ): String;
+function TTableForm.BuildFilter( Index: Integer; ForQuery: Boolean;
+                                 AddLogic: Boolean = True ): String;
 begin
   with FFilters[ Index ] do begin
     if ForQuery then Result := RegTable[Tag].ColumnName( Column )
@@ -280,11 +282,11 @@ begin
     else
       Result += ExtractIntFromStr( Constant );
 
-    if ForQuery then begin // A + OP B + OP C ...
-      if ( Index > 0 ) then
-        Result := LogicCB.Items.Strings[Logic] + ' ' + Result;
-    end else begin // A OP + B OP + C OP ...
-      Result += ' ' + LogicCB.Items.Strings[Logic];
+    if AddLogic then begin
+      if ForQuery then // A + OP B + OP C ...
+        Result := LogicCB.Items.Strings[Logic] + ' ' + Result
+      else // A OP + B OP + C OP ...
+        Result += ' ' + LogicCB.Items.Strings[Logic];
     end;
   end;
 end;
