@@ -38,6 +38,7 @@ type
     SQLQuery        : TSQLQuery;
     DataSource      : TDataSource;
 
+    procedure FormDestroy( Sender: TObject );
     procedure FormClose( Sender: TObject; var CloseAction: TCloseAction );
     procedure CommitBtnClick( Sender: TObject );
     procedure ResetBtnClick( Sender: TObject );
@@ -112,11 +113,16 @@ end;
 
 { TTableForm }
 
+procedure TTableForm.FormDestroy( Sender: TObject );
+begin
+  FFilters.Destroy();
+  TableForm[Tag] := nil;
+end;
+
 procedure TTableForm.FormClose( Sender: TObject; var CloseAction: TCloseAction );
 begin
   if DiscardChanges() then begin
     SQLTransaction.Rollback();
-    TableForm[Tag] := nil;
     CloseAction := caFree;
   end else begin
     CloseAction := TCloseAction.caNone; //caNone is also a transaction state
