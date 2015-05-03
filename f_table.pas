@@ -8,8 +8,7 @@ interface
 uses
   SysUtils, Classes,
   Forms, Controls, Dialogs, StdCtrls, CheckLst,
-  SQLdb, db, DBGrids,
-  filters;
+  SQLdb, db, DBGrids, tables;
 
 type
 
@@ -74,8 +73,6 @@ var
   TableForm : array of TTableForm;
 
 implementation
-
-uses tables;
 
 {$R *.lfm}
 
