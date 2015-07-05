@@ -1,0 +1,67 @@
+object EditForm: TEditForm
+  Left = 307
+  Height = 302
+  Top = 154
+  Width = 526
+  BorderIcons = [biSystemMenu, biMinimize]
+  BorderStyle = bsSingle
+  ClientHeight = 302
+  ClientWidth = 526
+  OnClose = FormClose
+  OnShow = FormShow
+  Position = poDesktopCenter
+  LCLVersion = '1.2.6.0'
+  object GridEdit: TValueListEditor
+    Left = 8
+    Height = 256
+    Top = 8
+    Width = 512
+    AlternateColor = clCream
+    DefaultColWidth = 128
+    FixedCols = 0
+    Flat = True
+    MouseWheelOption = mwGrid
+    RowCount = 2
+    ScrollBars = ssAutoVertical
+    TabOrder = 0
+    OnKeyPress = GridEditKeyPress
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goAlwaysShowEditor, goThumbTracking, goCellHints, goTruncCellHints, goCellEllipsis, goRowHighlight]
+    Strings.Strings = (
+      ''
+    )
+    TitleCaptions.Strings = (
+      'Key'
+      'Value'
+    )
+    ColWidths = (
+      128
+      383
+    )
+  end
+  object OkBtn: TButton
+    Left = 360
+    Height = 25
+    Top = 272
+    Width = 75
+    Caption = 'OK'
+    Default = True
+    OnClick = OkBtnClick
+    TabOrder = 1
+  end
+  object CancelBtn: TButton
+    Left = 440
+    Height = 25
+    Top = 272
+    Width = 75
+    Caption = 'Cancel'
+    OnClick = CancelBtnClick
+    TabOrder = 2
+  end
+  object SQLQuery: TSQLQuery
+    FieldDefs = <>
+    ReadOnly = True
+    Params = <>
+    left = 40
+    top = 64
+  end
+end

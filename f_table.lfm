@@ -1,21 +1,21 @@
 object TableForm: TTableForm
-  Left = 390
-  Height = 400
-  Top = 393
+  Left = 391
+  Height = 405
+  Top = 394
   Width = 800
-  ClientHeight = 400
+  ClientHeight = 405
   ClientWidth = 800
   Constraints.MinHeight = 400
   Constraints.MinWidth = 800
   OnClose = FormClose
   OnDestroy = FormDestroy
+  OnShow = FormShow
   Position = poMainFormCenter
   ShowInTaskBar = stNever
   LCLVersion = '1.2.6.0'
-  Visible = True
   object DBGrid: TDBGrid
     Left = 8
-    Height = 384
+    Height = 389
     Top = 8
     Width = 464
     Anchors = [akTop, akLeft, akRight, akBottom]
@@ -27,12 +27,13 @@ object TableForm: TTableForm
     OptionsExtra = [dgeAutoColumns]
     TabOrder = 0
     TitleStyle = tsStandard
+    OnDblClick = DBGridDblClick
     OnTitleClick = DBGridTitleClick
   end
   object AddEntryBtn: TButton
     Left = 488
     Height = 25
-    Top = 367
+    Top = 372
     Width = 27
     Anchors = [akRight, akBottom]
     Caption = '+'
@@ -42,7 +43,7 @@ object TableForm: TTableForm
   object EraseEntryBtn: TButton
     Left = 520
     Height = 25
-    Top = 367
+    Top = 372
     Width = 27
     Anchors = [akRight, akBottom]
     Caption = '–'
@@ -52,27 +53,29 @@ object TableForm: TTableForm
   object CommitBtn: TButton
     Left = 592
     Height = 25
-    Top = 367
+    Top = 372
     Width = 59
     Anchors = [akRight, akBottom]
     Caption = 'Commit'
+    Enabled = False
     OnClick = CommitBtnClick
     TabOrder = 1
   end
-  object ResetBtn: TButton
+  object RollbackBtn: TButton
     Left = 656
     Height = 25
-    Top = 367
+    Top = 372
     Width = 59
     Anchors = [akRight, akBottom]
-    Caption = 'Reset'
-    OnClick = ResetBtnClick
+    Caption = 'Rollback'
+    Enabled = False
+    OnClick = RollbackBtnClick
     TabOrder = 2
   end
   object RefreshBtn: TButton
     Left = 728
     Height = 25
-    Top = 367
+    Top = 372
     Width = 59
     Anchors = [akRight, akBottom]
     Caption = 'Refresh'
@@ -85,7 +88,7 @@ object TableForm: TTableForm
     Top = 8
     Width = 312
     Anchors = [akTop, akRight]
-    Caption = 'Fiters'
+    Caption = 'Filters'
     ClientHeight = 334
     ClientWidth = 308
     TabOrder = 4
@@ -181,14 +184,17 @@ object TableForm: TTableForm
   end
   object SQLQuery: TSQLQuery
     FieldDefs = <>
+    AfterDelete = SQLQueryAfterDelete
+    AfterInsert = SQLQueryAfterInsert
+    AfterPost = SQLQueryAfterPost
     Transaction = SQLTransaction
     Params = <>
-    UpdateMode = upWhereChanged
     left = 120
     top = 64
   end
   object DataSource: TDataSource
     DataSet = SQLQuery
+    OnStateChange = DataSourceStateChange
     OnUpdateData = DataSourceUpdateData
     left = 184
     top = 64

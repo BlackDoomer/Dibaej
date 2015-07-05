@@ -3,7 +3,7 @@ unit tables;
 {$MODE OBJFPC}
 {$LONGSTRINGS ON}
 
-interface
+interface {════════════════════════════════════════════════════════════════════}
 
 uses
   SysUtils, Classes;
@@ -20,7 +20,6 @@ type { General tables types ═════════════════�
 
   //general column class
   TColumnInfo = record
-    UserEdit           : Boolean;     //is column could be edited by user
     Name               : String;      //if referenced, points to another table
     Caption            : String;      //if empty, Name will be used
     DataType           : TColumnDataType;
@@ -31,6 +30,9 @@ type { General tables types ═════════════════�
   end;
 
   //general table class
+  
+  { TTableInfo }
+
   TTableInfo = class
     private
       FName          : String;
@@ -38,17 +40,21 @@ type { General tables types ═════════════════�
       FColumns       : array of TColumnInfo;
       FColumnsNum    : Integer;
       FReferenced    : Boolean;
+      FKeyColumn     : Integer;
 
       function GetColumnName( ColInf: TColumnInfo ): String;
       function GetColumnCaption( ColInf: TColumnInfo ): String;
     public
       constructor Create( AName, ACaption: String );
-      procedure AddColumn( AEditable: Boolean = False;
+      procedure AddColumn( AKey: Boolean = True;
                            AName: String = 'ID'; ACaption: String = 'ID';
                            ADataType: TColumnDataType = DT_NUMERIC;
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
-      function GetSelectSQL(): String;
+      function GetSelectSQL( OnceCol: String = '' ): String;
+      function GetInsertSQL(): String;
+      function GetUpdateSQL(): String;
+      function GetDeleteSQL(): String;
       function Columns( Index: Integer ): TColumnInfo;
       function ColumnName( Index: Integer ): String;
       function ColumnCaption( Index: Integer ): String;
@@ -56,6 +62,7 @@ type { General tables types ═════════════════�
 
       property Caption: String read FCaption;
       property ColumnsNum: Integer read FColumnsNum;
+      property KeyColumn: Integer read FKeyColumn;
       
   end;
 
@@ -104,22 +111,23 @@ begin
   FCaption := ACaption;
   FColumnsNum := 0;
   FReferenced := False;
+  FKeyColumn := -1;
   SetLength( RegTable, Length(RegTable)+1 );
   RegTable[ High(RegTable) ] := Self;
 end;
 
 { –=────────────────────────────────────────────────────────────────────────=– }
 
-procedure TTableInfo.AddColumn( AEditable: Boolean = False;
+procedure TTableInfo.AddColumn( AKey: Boolean = True;
                                 AName: String = 'ID'; ACaption: String = 'ID';
                                 ADataType: TColumnDataType = DT_NUMERIC;
                                 AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                                 AColKey: String = ''; ARefKey: String = 'ID' );
 begin
+  if AKey then FKeyColumn := FColumnsNum;
   FColumnsNum += 1;
   SetLength( FColumns, FColumnsNum );
   with FColumns[ FColumnsNum-1 ] do begin
-    UserEdit := AEditable;
     Name := AName;
     Caption := ACaption;
     DataType := ADataType;
@@ -128,29 +136,67 @@ begin
     ColKey := AColKey;
     RefKey := ARefKey;
   end;
-  if Assigned( ARefTable ) then FReferenced := True;
+  if ( ARefTable <> nil ) then FReferenced := True;
 end;
 
-function TTableInfo.GetSelectSQL(): String;
+function TTableInfo.GetSelectSQL( OnceCol: String = '' ): String;
 var
   ColInf : TColumnInfo;
   ColNames, TableRefs : String;
 begin
   ColNames := '';
+  if ( OnceCol = '' ) then begin
+    for ColInf in FColumns do begin
+      if ( ColNames <> '' ) then ColNames += ', ';
+      ColNames += GetColumnName( ColInf );
+    end;
+  end else begin
+    ColNames := ColumnName( FKeyColumn ) + ', ' + OnceCol;
+  end;
+
+  //support for table references
   TableRefs := '';
-
   for ColInf in FColumns do begin
-    if ( ColNames <> '' ) then ColNames += ', ';
-    ColNames += GetColumnName( ColInf );
-
-    //support for table references
-    if Assigned( ColInf.RefTable ) then
+    if ( ColInf.RefTable <> nil ) then
       TableRefs += ' inner join ' + ColInf.RefTable.FName +
                    ' on ' + FName + '.' + ColInf.ColKey +
                    ' = ' + ColInf.RefTable.FName + '.' + ColInf.RefKey;
   end;
-
+  
   Result := 'select ' + ColNames + ' from ' + FName + TableRefs;
+end;
+
+function TTableInfo.GetInsertSQL(): String;
+var
+  i : Integer;
+begin
+  Result := 'insert into ' + FName + ' values (';
+  for i := 1 to FColumnsNum do begin
+    if ( i > 1 ) then Result += ', ';
+    Result += 'NULL';
+  end;
+  Result += ')'
+end;
+
+function TTableInfo.GetUpdateSQL(): String;
+var
+  i : Integer;
+  name : String;
+begin
+  Result := 'update ' + FName + ' set';
+  for i := 1 to FColumnsNum do begin
+    if ( i > 1 ) then Result += ',';
+    if ( FColumns[i-1].RefTable = nil ) then name := FColumns[i-1].Name
+                                        else name := FColumns[i-1].ColKey;
+    Result += ' ' + name + ' = :' + IntToStr(i);
+  end;
+  Result += ' where ' + FColumns[FKeyColumn].Name + ' = :0';
+end;
+
+function TTableInfo.GetDeleteSQL(): String;
+begin
+  Result := 'delete from ' + FName + ' where ' +
+            FColumns[FKeyColumn].Name + ' = :0';
 end;
 
 { –=────────────────────────────────────────────────────────────────────────=– }
@@ -162,8 +208,8 @@ end;
 
 function TTableInfo.GetColumnName( ColInf: TColumnInfo ): String;
 begin
-  if Assigned( ColInf.RefTable ) then Result := ColInf.RefTable.FName
-                                 else Result := FName;
+  if ( ColInf.RefTable <> nil ) then Result := ColInf.RefTable.FName
+                                else Result := FName;
   Result += '.' + ColInf.Name;
 end;
 
@@ -283,7 +329,7 @@ begin
   end;
 end;
 
-function TFilterContext.GetFilter(Index: Integer): TFilter;
+function TFilterContext.GetFilter( Index: Integer ): TFilter;
 begin
   Result := FFilters[Index];
 end;

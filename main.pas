@@ -3,7 +3,7 @@ unit main;
 {$MODE OBJFPC}
 {$LONGSTRINGS ON}
 
-interface
+interface {════════════════════════════════════════════════════════════════════}
 
 uses
   SysUtils, Classes,
@@ -11,9 +11,8 @@ uses
   SQLdb, IBConnection,
   tables, f_table;
 
-type
-  
-  { TMainForm }
+{ –=────────────────────────────────────────────────────────────────────────=– }
+type { Main form class ═══════════════════════════════════════════════════════ }
 
   TMainForm = class( TForm )
   { interface controls }
@@ -48,14 +47,17 @@ type
     { public declarations }
   end;
 
+{ –=────────────────────────────────────────────────────────────────────────=– }
+
 var
   MainForm: TMainForm;
 
-implementation
+implementation {═══════════════════════════════════════════════════════════════}
 
 {$R *.lfm}
 
-{ TMainForm }
+{ –=────────────────────────────────────────────────────────────────────────=– }
+{ ═ TMainForm ──────────────────────────────────────────────────────────────── }
 
 procedure TMainForm.FormCreate( Sender: TObject );
 var
@@ -82,7 +84,7 @@ begin
   IBConnection.Connected := True;
 end;
 
-{ INTERFACE EVENTS =========================================================== }
+{ INTERFACE EVENTS ═══════════════════════════════════════════════════════════ }
 
 procedure TMainForm.ConnectItemClick( Sender: TObject );
 begin
@@ -113,7 +115,7 @@ begin
   ShowTableForm( (Sender as TMenuItem).Tag, IBConnection )
 end;
 
-{ DATABASE CONNECTION EVENTS ================================================= }
+{ DATABASE CONNECTION EVENTS ═════════════════════════════════════════════════ }
 
 procedure TMainForm.IBConnectionAfterConnect( Sender: TObject );
 begin
@@ -131,7 +133,7 @@ procedure TMainForm.IBConnectionBeforeConnect( Sender: TObject );
     begin WriteToLog( 'Establishing connection to database...' );
       end;
 
-{ COMMON ROUTINES ============================================================ }
+{ COMMON ROUTINES ════════════════════════════════════════════════════════════ }
 
 procedure TMainForm.IBConnectionLog( Sender: TSQLConnection; 
                                      EventType: TDBEventType; const Msg: String );
@@ -159,7 +161,6 @@ end;
 //default exception handler
 procedure TMainForm.ReportError( Sender: TObject; E: Exception );
 begin
-  { TODO 1 : Write proper exception handling }
   MessageDlg( E.Message, mtError, [mbOK], 0 );
   WriteToLog( 'An error occurred:' + LineEnding + E.Message, True );
 end;

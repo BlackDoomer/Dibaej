@@ -3,14 +3,16 @@ unit f_table;
 {$MODE OBJFPC}
 {$LONGSTRINGS ON}
 
-interface
+interface {════════════════════════════════════════════════════════════════════}
 
 uses
   SysUtils, Classes,
   Forms, Controls, Dialogs, StdCtrls, CheckLst,
-  SQLdb, db, DBGrids, tables;
+  SQLdb, db, DBGrids,
+  f_edit, tables;
 
-type
+{ –=────────────────────────────────────────────────────────────────────────=– }
+type { Table viewer form class ═══════════════════════════════════════════════ }
 
   { TTableForm }
 
@@ -20,7 +22,7 @@ type
     AddEntryBtn         : TButton;
     EraseEntryBtn       : TButton;
     CommitBtn           : TButton;
-    ResetBtn            : TButton;
+    RollbackBtn         : TButton;
     RefreshBtn          : TButton;
 
     FiltersBox          : TGroupBox;
@@ -32,48 +34,61 @@ type
       AddFilterBtn      : TButton;
       ClearFiltersBtn   : TButton;
       FiltersCheck      : TCheckBox;
+  { end of interface controls }
 
-  { database controls }
     SQLTransaction  : TSQLTransaction;
     SQLQuery        : TSQLQuery;
     DataSource      : TDataSource;
 
+    procedure FormShow( Sender: TObject );
     procedure FormDestroy( Sender: TObject );
     procedure FormClose( Sender: TObject; var CloseAction: TCloseAction );
+
     procedure CommitBtnClick( Sender: TObject );
-    procedure ResetBtnClick( Sender: TObject );
+    procedure RollbackBtnClick( Sender: TObject );
     procedure RefreshBtnClick( Sender: TObject );
     procedure DBGridTitleClick( Column: TColumn );
+    procedure DBGridDblClick( Sender: TObject );
 
     procedure AddFilterBtnClick( Sender: TObject );
     procedure ClearFiltersBtnClick( Sender: TObject );
     procedure FiltersCListClick( Sender: TObject );
     procedure FilterChange( Sender: TObject );
 
+    procedure RemoteUpdate();
     procedure AddEntryBtnClick( Sender: TObject );
     procedure EraseEntryBtnClick( Sender: TObject );
+    procedure SQLQueryAfterInsert( DataSet: TDataSet );
+    procedure SQLQueryAfterDelete( DataSet: TDataSet );
     procedure DataSourceUpdateData( Sender: TObject );
+    procedure DataSourceStateChange( Sender: TObject );
+    procedure SQLQueryAfterPost( DataSet: TDataSet );
 
   private
     FFilters : TFilterContext;
     FSortIndex : Integer;
     FDescSort : Boolean;
     FDataEdited : Boolean;
-    procedure Fetch();
-    procedure AdjustControls();
-    function DiscardChanges(): Boolean;
+
+    procedure Fetch( Soft: Boolean = False; CursPos: Integer = -1 );
     procedure UpdateFilter( Index: Integer );
+
+    procedure AdjustControls();
+    procedure SetDataEdited( Edited: Boolean );
+    function dlgDiscardChanges(): Boolean;
 
   public
     { public declarations }
   end;
 
-  function ShowTableForm( Index: Integer; DBConnection: TSQLConnection ): Boolean;
+{ –=────────────────────────────────────────────────────────────────────────=– }
+
+function ShowTableForm( Index: Integer; DBConnection: TSQLConnection ): Boolean;
 
 var
   TableForm : array of TTableForm;
 
-implementation
+implementation {═══════════════════════════════════════════════════════════════}
 
 {$R *.lfm}
 
@@ -85,33 +100,40 @@ begin
     TableForm[Index].ShowOnTop();
     Result := False;
   end else begin
-    Application.CreateForm( TTableForm, TableForm[Index] );
+    TableForm[Index] := TTableForm.Create( Application.MainForm );
     with TableForm[Index] do begin
       Tag := Index;
-      Caption := RegTable[Index].Caption;
-      FSortIndex := -1;
-      FDescSort := True; //will be set to FALSE on first sorting
-
-      FFilters := TFilterContext.Create( Index );
       SQLTransaction.DataBase := DBConnection;
       SQLQuery.DataBase := DBConnection;
-      SQLTransaction.Active := True;
-      Fetch();
-
-      RegTable[Index].GetColumns( ColumnsCB.Items );
-      ColumnsCB.ItemIndex := 0;
-      OperationsCB.Items.AddStrings( FilterOperations );
-      OperationsCB.ItemIndex := 0;
-      LogicCB.Items.AddStrings( FilterLogic );
-      LogicCB.ItemIndex := 0;
-
-      Result := True;
+      Show();
     end;
+    Result := True;
   end;
 
 end;
 
-{ TTableForm }
+{ –=────────────────────────────────────────────────────────────────────────=– }
+{ ═ TTableInfo ─────────────────────────────────────────────────────────────── }
+
+//FormShow used as FormCreate to prepare form somehow before (see ShowTableForm)
+procedure TTableForm.FormShow( Sender: TObject );
+begin
+  Caption := RegTable[Tag].Caption;
+  FSortIndex := -1;
+  FDescSort := True; //will be set to FALSE on first sorting
+  FDataEdited := False;
+
+  FFilters := TFilterContext.Create( Tag );
+  SQLTransaction.Active := True;
+  Fetch();
+
+  RegTable[Tag].GetColumns( ColumnsCB.Items );
+  ColumnsCB.ItemIndex := 0;
+  OperationsCB.Items.AddStrings( FilterOperations );
+  OperationsCB.ItemIndex := 0;
+  LogicCB.Items.AddStrings( FilterLogic );
+  LogicCB.ItemIndex := 0;
+end;
 
 procedure TTableForm.FormDestroy( Sender: TObject );
 begin
@@ -121,7 +143,7 @@ end;
 
 procedure TTableForm.FormClose( Sender: TObject; var CloseAction: TCloseAction );
 begin
-  if DiscardChanges() then begin
+  if dlgDiscardChanges() then begin
     SQLTransaction.Rollback();
     CloseAction := caFree;
   end else begin
@@ -129,35 +151,47 @@ begin
   end;
 end;
 
+{ COMMON INTERFACE PROCESSING ════════════════════════════════════════════════ }
+
 procedure TTableForm.CommitBtnClick( Sender: TObject );
+var
+  cur : Integer;
 begin
-  SQLQuery.ApplyUpdates();
+  cur := SQLQuery.RecNo;
   SQLTransaction.Commit();
-  Fetch();
+  SetDataEdited( False );
+  Fetch( True, cur );
 end;
 
-procedure TTableForm.ResetBtnClick( Sender: TObject );
+procedure TTableForm.RollbackBtnClick( Sender: TObject );
+var
+  cur : Integer;
 begin
-  SQLQuery.CancelUpdates();
-  FDataEdited := False;
+  cur := SQLQuery.RecNo;
+  SQLTransaction.Rollback();
+  SetDataEdited( False );
+  Fetch( True, cur );
 end;
 
 procedure TTableForm.RefreshBtnClick( Sender: TObject );
 begin
-  if DiscardChanges() then Fetch();
+  Fetch();
 end;
 
 procedure TTableForm.DBGridTitleClick( Column: TColumn );
 begin
-  { TODO 2 : Improve sorting, add ability to select multiple columns }
-  if DiscardChanges() then begin
-    FSortIndex := Column.Index+1;
-    FDescSort := not FDescSort;
-    Fetch();
-  end;
+  FSortIndex := Column.Index+1;
+  FDescSort := not FDescSort;
+  Fetch();
 end;
 
-{ FILTERS PROCESSING ========================================================= }
+procedure TTableForm.DBGridDblClick( Sender: TObject );
+begin
+  if DBGrid.ReadOnly and not SQLQuery.IsEmpty then
+    ShowEditForm( Tag, SQLQuery.Fields, SQLTransaction );
+end;
+
+{ FILTERS PROCESSING ═════════════════════════════════════════════════════════ }
 
 procedure TTableForm.AddFilterBtnClick( Sender: TObject );
 begin
@@ -204,24 +238,48 @@ begin
   FiltersCList.Items.Strings[Index] := FFilters.GetSQL( Index, False );
 end;
 
-{ DATABASE EDITING ROUTINES ================================================== }
+{ DATABASE EDITING ROUTINES ══════════════════════════════════════════════════ }
+
+procedure TTableForm.RemoteUpdate();
+begin
+  Fetch( True );
+  SetDataEdited( True );
+end;
 
 procedure TTableForm.AddEntryBtnClick( Sender: TObject );
 begin
-  SQLQuery.Insert();
+  if DBGrid.ReadOnly then begin
+    SQLQuery.Active := False;
+    SQLQuery.SQL.Text := RegTable[Tag].GetInsertSQL();
+    SQLQuery.ExecSQL();
+    Fetch();
+    SetDataEdited( True );
+  end else
+    SQLQuery.Append();
 end;
 
 procedure TTableForm.EraseEntryBtnClick( Sender: TObject );
+var
+  cur, id : Integer;
 begin
-  SQLQuery.Delete();
+  if SQLQuery.IsEmpty then Exit;
+
+  if DBGrid.ReadOnly then begin
+    cur := SQLQuery.RecNo;
+    id := SQLQuery.Fields.Fields[ RegTable[Tag].KeyColumn ].AsInteger;
+
+    SQLQuery.Active := False;
+    SQLQuery.SQL.Text := RegTable[Tag].GetDeleteSQL();
+    SQLQuery.ParamByName('0').AsInteger := id;
+
+    SQLQuery.ExecSQL();
+    Fetch( False, cur );
+    SetDataEdited( True );
+  end else
+    SQLQuery.Delete();
 end;
 
-procedure TTableForm.DataSourceUpdateData( Sender: TObject );
-begin
-  FDataEdited := True;
-end;
-
-function TTableForm.DiscardChanges(): Boolean;
+function TTableForm.dlgDiscardChanges(): Boolean;
 begin
   if FDataEdited then
     Result := MessageDlg( 'There are some uncommited changes, discard?',
@@ -230,60 +288,99 @@ begin
     Result := True;
 end;
 
-{ DATABASE GRID FETCHING ROUTINES ============================================ }
+procedure TTableForm.SetDataEdited( Edited: Boolean );
+begin
+  FDataEdited := Edited;
+  CommitBtn.Enabled := Edited;
+  RollbackBtn.Enabled := Edited;
+end;
 
-procedure TTableForm.Fetch();
+//these events are used ONLY for editing of simple tables
+procedure TTableForm.SQLQueryAfterInsert( DataSet: TDataSet );
+    begin AddEntryBtn.Enabled := False;
+      end;
+
+procedure TTableForm.SQLQueryAfterDelete( DataSet: TDataSet );
+    begin SetDataEdited( True );
+      end;
+
+procedure TTableForm.DataSourceUpdateData( Sender: TObject );
+    begin SetDataEdited( True );
+      end;
+
+procedure TTableForm.DataSourceStateChange( Sender: TObject );
+    begin if ( DataSource.State = dsBrowse ) then AddEntryBtn.Enabled := True;
+      end;
+
+procedure TTableForm.SQLQueryAfterPost( DataSet: TDataSet );
+    begin SQLQuery.ApplyUpdates();
+      end;
+
+{ DATABASE GRID FETCHING ROUTINES ════════════════════════════════════════════ }
+
+procedure TTableForm.Fetch( Soft: Boolean = False; CursPos: Integer = -1 );
 var
   QueryCmd : String;
-  i, param : Integer;
+  i, cur, param : Integer;
 begin
-  QueryCmd := '';
-  if FiltersCheck.Checked then begin
-    param := 0;
-    for i := 0 to FiltersCList.Count-1 do begin
-      if ( FiltersCList.Checked[i] ) then begin
-        QueryCmd += ' ' + FFilters.GetSQL( i, True, QueryCmd <> '' ) + ':'
-          + IntToStr(param);
-        param += 1;
-      end;
-    end;
-    if ( QueryCmd <> '' ) then
-      QueryCmd := ' where' + QueryCmd;
-  end;
+  if ( CursPos = -1 ) then cur := SQLQuery.RecNo
+                      else cur := CursPos;
+  if Soft then
+    SQLQuery.Refresh()
 
-  QueryCmd := RegTable[Tag].GetSelectSQL() + QueryCmd;
+  else begin
 
-  if ( FSortIndex <> -1 ) then begin
-    QueryCmd += ' order by ' + IntToStr( FSortIndex );
-    if FDescSort then QueryCmd += ' desc';
-  end;
-
-  SQLQuery.Active := False;
-  SQLQuery.SQL.Text := QueryCmd;
-  if ( param > 0 ) then begin
-    param := 0;
-    for i := 0 to FiltersCList.Count-1 do begin
-      if ( FiltersCList.Checked[i] ) then begin
-        with SQLQuery.ParamByName( IntToStr(param) ) do begin
-          AsString := FFilters.GetConst(i);
-          if ( RegTable[Tag].Columns( FFilters.GetFilter(i).Column ).DataType = DT_NUMERIC ) then
-            DataType := ftInteger;
+    QueryCmd := '';
+    if FiltersCheck.Checked then begin
+      param := 0;
+      for i := 0 to FiltersCList.Count-1 do begin
+        if ( FiltersCList.Checked[i] ) then begin
+          QueryCmd += ' ' + FFilters.GetSQL( i, True, QueryCmd <> '' ) + ':'
+            + IntToStr(param);
+          param += 1;
         end;
-        param += 1;
+      end;
+      if ( QueryCmd <> '' ) then
+        QueryCmd := ' where' + QueryCmd;
+    end;
+  
+    QueryCmd := RegTable[Tag].GetSelectSQL() + QueryCmd;
+  
+    if ( FSortIndex <> -1 ) then begin
+      QueryCmd += ' order by ' + IntToStr( FSortIndex );
+      if FDescSort then QueryCmd += ' desc';
+    end;
+  
+    SQLQuery.Active := False;
+    SQLQuery.SQL.Text := QueryCmd;
+  
+    if ( param > 0 ) then begin
+      param := 0;
+      for i := 0 to FiltersCList.Count-1 do begin
+        if ( FiltersCList.Checked[i] ) then begin
+          with SQLQuery.ParamByName( IntToStr(param) ) do begin
+            AsString := FFilters.GetConst(i);
+            if ( RegTable[Tag].Columns( FFilters.GetFilter(i).Column ).DataType = DT_NUMERIC ) then
+              DataType := ftInteger;
+          end;
+          param += 1;
+        end;
       end;
     end;
+
+    SQLQuery.Active := True;
+
   end;
 
-  SQLQuery.Active := True;
+  SQLQuery.Last;
+  SQLQuery.MoveBy( -(SQLQuery.RecNo-cur) );
   AdjustControls();
-  FDataEdited := False;
 end;
 
 procedure TTableForm.AdjustControls();
 var
   i : Integer;
 begin
-  { TODO 2 : Possibility to edit referenced tables? Now they just locks. }
   if not SQLQuery.CanModify then begin
     DBGrid.ReadOnly := True;
     DBGrid.Options := DBGrid.Options + [dgRowSelect] - [dgEditing];
@@ -291,8 +388,8 @@ begin
 
   for i := 0 to RegTable[Tag].ColumnsNum-1 do
     with DBGrid.Columns.Items[i] do begin
-      Field.Required := RegTable[Self.Tag].Columns(i).UserEdit;
-      ReadOnly := not Field.Required;
+      ReadOnly := i = RegTable[Self.Tag].KeyColumn;
+      Field.Required := not ReadOnly;
       Title.Caption := RegTable[Self.Tag].ColumnCaption(i);
       if ( RegTable[Self.Tag].Columns(i).Width > 0 ) then
         Width := RegTable[Self.Tag].Columns(i).Width;
