@@ -8,7 +8,8 @@ interface {═══════════════════════
 uses
   SysUtils, Classes,
   Forms, Controls, Dialogs, StdCtrls, ValEdit,
-  SQLdb, db, Grids;
+  SQLdb, db, Grids,
+  tables;
 
 { –=────────────────────────────────────────────────────────────────────────=– }
 type { Editor form class ═════════════════════════════════════════════════════ }
@@ -17,12 +18,12 @@ type { Editor form class ══════════════════�
 
   TEditForm = class( TForm )
   { interface controls }
-    GridEdit            : TValueListEditor;
-    OkBtn               : TButton;
-    CancelBtn           : TButton;
+    GridEdit       : TValueListEditor;
+    OkBtn          : TButton;
+    CancelBtn      : TButton;
   { end of interface controls }
 
-    SQLQuery            : TSQLQuery;
+    SQLQuery       : TSQLQuery;
 
     procedure FormShow( Sender: TObject );
     procedure FormClose( Sender: TObject; var CloseAction: TCloseAction );
@@ -31,9 +32,13 @@ type { Editor form class ══════════════════�
     procedure GridEditKeyPress( Sender: TObject; var Key: Char );
 
   private
-    FEditMode           : Boolean;
+    FEditing : Boolean;
+    FRowID : Integer; //row surrogate key
+    FTable : TTableInfo;
   public
-    property EditMode: Boolean read FEditMode write FEditMode;
+    property Editing: Boolean read FEditing write FEditing;
+    property RowID: Integer read FRowID write FRowID;
+    property Table: TTableInfo read FTable write FTable;
   end;
 
 { –=────────────────────────────────────────────────────────────────────────=– }
@@ -43,14 +48,10 @@ function ShowEditForm( TableID: Integer; Fields: TFields;
 
 implementation {═══════════════════════════════════════════════════════════════}
 
-uses tables, f_table;
+uses f_table;
 
 var
-  RowEdit: array[0..255] of record //256 is good enough, haters gonna hate
-    ID: Integer;        //row surrogate key
-    Form: TEditForm;    //editor form
-    Table: TTableInfo;  //table metadata object
-  end;
+  RowEdit: array[0..255] of TEditForm; //256 is good enough, haters gonna hate
 
 {$R *.lfm}
 
@@ -60,21 +61,22 @@ function ShowEditForm( TableID: Integer; Fields: TFields;
                        DBTransaction: TSQLTransaction ): Boolean;
 var
   i, empty, keyid : Integer;
-  mode : Boolean;
+  edit : Boolean;
   value : String;
 begin
-  mode := Fields <> nil;
-  //check if editor for this field is already opened
-  if mode then keyid := Fields.Fields[ RegTable[TableID].KeyColumn ].AsInteger
+  edit := Fields <> nil;
+  if edit then keyid := Fields.Fields[ RegTable[TableID].KeyColumn ].AsInteger
           else keyid := -1;
 
+  //check if editor for this field is already opened
   empty := -1;
   for i := High(RowEdit) downto Low(RowEdit) do begin
-    if not Assigned( RowEdit[i].Form ) then
+    if not Assigned( RowEdit[i] ) then
       empty := i
     else
-      if ( RowEdit[i].ID = keyid ) then begin
-        RowEdit[i].Form.ShowOnTop();
+      { TODO: NOT A KEY ID }
+      if ( RowEdit[i].RowID = keyid ) then begin
+        RowEdit[i].ShowOnTop();
         Exit( False );
       end;    
   end;
@@ -83,21 +85,21 @@ begin
     raise Exception.Create('Too many editors.');
 
   //everything seems OK, let's create form...
-  RowEdit[empty].Form := TEditForm.Create( TableForm[TableID] );
-  RowEdit[empty].ID := keyid;
-  RowEdit[empty].Table := RegTable[TableID];
-  with RowEdit[empty].Form do begin
+  RowEdit[empty] := TEditForm.Create( TableForm[TableID] );
+  with RowEdit[empty] do begin
     Tag := empty;
+    RowID := keyid;
+    Table := RegTable[TableID];
     SQLQuery.Transaction := DBTransaction;
     SQLQuery.DataBase := DBTransaction.DataBase;
 
     //...and fill editor grid with keys (and values)
     value := '';
-    EditMode := mode;
-    for i := 0 to RegTable[TableID].ColumnsNum-1 do begin
-      if mode then value := Fields.Fields[i].AsString;
-      GridEdit.InsertRow( RegTable[TableID].ColumnCaption(i), value, True );
+    for i := 0 to Table.ColumnsNum-1 do begin
+      if edit then value := Fields.Fields[i].AsString;
+      GridEdit.InsertRow( Table.ColumnCaption(i), value, True );
     end;
+    Editing := edit;
     Show();
   end;
 
@@ -113,29 +115,31 @@ var
   i : Integer;
   column : TColumnInfo;
 begin
-  if EditMode then
-    Caption := 'ID ' + IntToStr( RowEdit[Tag].ID ) +
-               ' - ' + RowEdit[Tag].Table.Caption
-  else
-    Caption := 'Insert - ' + RowEdit[Tag].Table.Caption;
+  if FEditing then Caption := 'ID ' + IntToStr( FRowID ) + ' - '
+              else Caption := 'Insert - ';
+  Caption := Caption + FTable.Caption;
 
   //setting editor grid more complexly
-  GridEdit.ItemProps[ RowEdit[Tag].Table.KeyColumn ].ReadOnly := True;
+  GridEdit.ItemProps[ FTable.KeyColumn ].ReadOnly := True;
 
-  for i := 0 to RowEdit[Tag].Table.ColumnsNum-1 do begin
-    column := RowEdit[Tag].Table.Columns(i);
+  for i := 0 to FTable.ColumnsNum-1 do begin
+    column := FTable.Columns(i);
     if ( column.RefTable <> nil ) then begin
+      
       SQLQuery.Active := False;
       SQLQuery.SQL.Text := column.RefTable.GetSelectSQL( column.Name );
       SQLQuery.Active := True;
 
-      GridEdit.ItemProps[i].ReadOnly := True;
-      GridEdit.ItemProps[i].EditStyle := esPickList;
-      while not SQLQuery.EOF do begin
-        GridEdit.ItemProps[i].PickList.AddObject( SQLQuery.Fields.Fields[1].AsString,
-                                                  TObject( SQLQuery.Fields.Fields[0].AsInteger ) );
-        SQLQuery.Next();
+      with GridEdit.ItemProps[i] do begin
+        ReadOnly := True;
+        EditStyle := esPickList;
+        while not SQLQuery.EOF do begin
+          PickList.AddObject( SQLQuery.Fields.Fields[1].AsString,
+            TObject( SQLQuery.Fields.Fields[0].AsInteger ) );
+          SQLQuery.Next();
+        end;
       end;
+      
     end;
   end;
 
@@ -144,7 +148,7 @@ end;
 
 procedure TEditForm.FormClose( Sender: TObject; var CloseAction: TCloseAction );
 begin
-  RowEdit[Tag].Form := nil;
+  RowEdit[Tag] := nil;
   CloseAction := caFree;
 end;
 
@@ -152,31 +156,33 @@ end;
 
 procedure TEditForm.OkBtnClick( Sender: TObject );
 var
-  i, id : Integer;
+  i, ind : Integer;
   param : String;
+  column : TColumnInfo;
 begin
-  if EditMode then begin
-    SQLQuery.SQL.Text := RowEdit[Tag].Table.GetUpdateSQL();
-    SQLQuery.ParamByName('0').AsInteger := RowEdit[Tag].ID;
+  if FEditing then begin
+    SQLQuery.SQL.Text := FTable.GetUpdateSQL();
+    SQLQuery.ParamByName('0').AsInteger := FRowID;
   end else
-    SQLQuery.SQL.Text := RowEdit[Tag].Table.GetInsertSQL();
+    SQLQuery.SQL.Text := FTable.GetInsertSQL();
 
   for i := 0 to GridEdit.RowCount-2 do begin
+    column := FTable.Columns(i);
     with GridEdit do begin
       param := Cells[1, i+1];
-      //if this column is referenced, we use ID instead of visible value
-      if ( ItemProps[i].EditStyle = esPickList ) then begin
+      if ( column.RefTable <> nil ) then begin
         Row := i+1; //this sets necessary combobox to Editor property
-        id := TComboBox(Editor).ItemIndex;
-        if (id < 0) then id := 0; //if nothing were selected, select first
-        param := IntToStr( Integer( ItemProps[i].PickList.Objects[id] ) );
+        ind := TComboBox(Editor).ItemIndex;
+        if (ind < 0) then //if something weren't selected, go out
+          raise Exception.Create('Some values were not selected.');
+        param := IntToStr( Integer( ItemProps[i].PickList.Objects[ind] ) );
       end;
     end;
 
     //simple datatypes support
     with SQLQuery.ParamByName( IntToStr(i+1) ) do begin
       AsString := param;
-      if ( RowEdit[Tag].Table.Columns(i).DataType = DT_NUMERIC ) then
+      if ( column.DataType = DT_NUMERIC ) then
         DataType := ftInteger;
     end;
 

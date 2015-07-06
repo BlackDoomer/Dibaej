@@ -291,14 +291,16 @@ begin
   RollbackBtn.Enabled := Edited;
 end;
 
-//these events are used ONLY for editing of simple tables
+//next events are used ONLY for editing of simple tables
 procedure TTableForm.SQLQueryAfterInsert( DataSet: TDataSet );
     begin AddEntryBtn.Enabled := False;
       end;
 
 procedure TTableForm.SQLQueryAfterDelete( DataSet: TDataSet );
-    begin SetDataEdited( True );
-      end;
+begin
+  SQLQuery.ApplyUpdates();
+  SetDataEdited( True );
+end;
 
 procedure TTableForm.DataSourceUpdateData( Sender: TObject );
     begin SetDataEdited( True );
