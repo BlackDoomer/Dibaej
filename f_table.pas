@@ -160,7 +160,7 @@ begin
   cur := SQLQuery.RecNo;
   SQLTransaction.Commit();
   SetDataEdited( False );
-  Fetch( True, cur );
+  Fetch( False, cur );
 end;
 
 procedure TTableForm.RollbackBtnClick( Sender: TObject );
@@ -170,7 +170,7 @@ begin
   cur := SQLQuery.RecNo;
   SQLTransaction.Rollback();
   SetDataEdited( False );
-  Fetch( True, cur );
+  Fetch( False, cur );
 end;
 
 procedure TTableForm.RefreshBtnClick( Sender: TObject );
@@ -248,13 +248,9 @@ end;
 
 procedure TTableForm.AddEntryBtnClick( Sender: TObject );
 begin
-  if DBGrid.ReadOnly then begin
-    SQLQuery.Active := False;
-    SQLQuery.SQL.Text := RegTable[Tag].GetInsertSQL();
-    SQLQuery.ExecSQL();
-    Fetch();
-    SetDataEdited( True );
-  end else
+  if DBGrid.ReadOnly then
+    ShowEditForm( Tag, nil, SQLTransaction )
+  else
     SQLQuery.Append();
 end;
 

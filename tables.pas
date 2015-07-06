@@ -169,13 +169,19 @@ end;
 function TTableInfo.GetInsertSQL(): String;
 var
   i : Integer;
+  cols, vals : String;
 begin
-  Result := 'insert into ' + FName + ' values (';
+  Result := 'insert into ' + FName + ' (';
+  cols := ''; vals := '';
   for i := 1 to FColumnsNum do begin
-    if ( i > 1 ) then Result += ', ';
-    Result += 'NULL';
+    if (i > 1) then begin
+      cols += ', '; vals += ', ';
+    end;
+    if ( FColumns[i-1].RefTable = nil ) then cols += FColumns[i-1].Name
+                                        else cols += FColumns[i-1].ColKey;
+    if ( i = FKeyColumn ) then vals += 'NULL' else vals += ':' + IntToStr(i);
   end;
-  Result += ')'
+  Result += cols + ') values (' + vals + ')';
 end;
 
 function TTableInfo.GetUpdateSQL(): String;

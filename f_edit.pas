@@ -31,9 +31,9 @@ type { Editor form class ══════════════════�
     procedure GridEditKeyPress( Sender: TObject; var Key: Char );
 
   private
-    { private declarations }
+    FEditMode           : Boolean;
   public
-    { public declarations }
+    property EditMode: Boolean read FEditMode write FEditMode;
   end;
 
 { –=────────────────────────────────────────────────────────────────────────=– }
@@ -60,9 +60,14 @@ function ShowEditForm( TableID: Integer; Fields: TFields;
                        DBTransaction: TSQLTransaction ): Boolean;
 var
   i, empty, keyid : Integer;
+  mode : Boolean;
+  value : String;
 begin
+  mode := Fields <> nil;
   //check if editor for this field is already opened
-  keyid := Fields.Fields[ RegTable[TableID].KeyColumn ].AsInteger;
+  if mode then keyid := Fields.Fields[ RegTable[TableID].KeyColumn ].AsInteger
+          else keyid := -1;
+
   empty := -1;
   for i := High(RowEdit) downto Low(RowEdit) do begin
     if not Assigned( RowEdit[i].Form ) then
@@ -77,7 +82,7 @@ begin
   if ( empty = -1 ) then
     raise Exception.Create('Too many editors.');
 
-  //evrything seems OK, let's create form...
+  //everything seems OK, let's create form...
   RowEdit[empty].Form := TEditForm.Create( TableForm[TableID] );
   RowEdit[empty].ID := keyid;
   RowEdit[empty].Table := RegTable[TableID];
@@ -86,10 +91,13 @@ begin
     SQLQuery.Transaction := DBTransaction;
     SQLQuery.DataBase := DBTransaction.DataBase;
 
-    //...and fill editor grid with keys and values
-    for i := 0 to RegTable[TableID].ColumnsNum-1 do
-      GridEdit.InsertRow( RegTable[TableID].ColumnCaption(i),
-                          Fields.Fields[i].AsString, True );
+    //...and fill editor grid with keys (and values)
+    value := '';
+    EditMode := mode;
+    for i := 0 to RegTable[TableID].ColumnsNum-1 do begin
+      if mode then value := Fields.Fields[i].AsString;
+      GridEdit.InsertRow( RegTable[TableID].ColumnCaption(i), value, True );
+    end;
     Show();
   end;
 
@@ -105,7 +113,11 @@ var
   i : Integer;
   column : TColumnInfo;
 begin
-  Caption := 'ID ' + IntToStr( RowEdit[Tag].ID ) + ' - ' + RowEdit[Tag].Table.Caption;
+  if EditMode then
+    Caption := 'ID ' + IntToStr( RowEdit[Tag].ID ) +
+               ' - ' + RowEdit[Tag].Table.Caption
+  else
+    Caption := 'Insert - ' + RowEdit[Tag].Table.Caption;
 
   //setting editor grid more complexly
   GridEdit.ItemProps[ RowEdit[Tag].Table.KeyColumn ].ReadOnly := True;
@@ -140,11 +152,14 @@ end;
 
 procedure TEditForm.OkBtnClick( Sender: TObject );
 var
-  i : Integer;
+  i, id : Integer;
   param : String;
 begin
-  SQLQuery.SQL.Text := RowEdit[Tag].Table.GetUpdateSQL();
-  SQLQuery.ParamByName('0').AsInteger := RowEdit[Tag].ID;
+  if EditMode then begin
+    SQLQuery.SQL.Text := RowEdit[Tag].Table.GetUpdateSQL();
+    SQLQuery.ParamByName('0').AsInteger := RowEdit[Tag].ID;
+  end else
+    SQLQuery.SQL.Text := RowEdit[Tag].Table.GetInsertSQL();
 
   for i := 0 to GridEdit.RowCount-2 do begin
     with GridEdit do begin
@@ -152,8 +167,9 @@ begin
       //if this column is referenced, we use ID instead of visible value
       if ( ItemProps[i].EditStyle = esPickList ) then begin
         Row := i+1; //this sets necessary combobox to Editor property
-        param := IntToStr( Integer(
-          ItemProps[i].PickList.Objects[ TComboBox(Editor).ItemIndex ] ) );
+        id := TComboBox(Editor).ItemIndex;
+        if (id < 0) then id := 0; //if nothing were selected, select first
+        param := IntToStr( Integer( ItemProps[i].PickList.Objects[id] ) );
       end;
     end;
 
