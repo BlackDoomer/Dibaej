@@ -6,6 +6,8 @@ object ViewForm: TViewForm
   Caption = 'Timetable viewer'
   ClientHeight = 600
   ClientWidth = 800
+  Constraints.MinHeight = 600
+  Constraints.MinWidth = 800
   OnClose = FormClose
   OnShow = FormShow
   Position = poDesktopCenter
@@ -22,20 +24,20 @@ object ViewForm: TViewForm
   end
   object RowFieldCB: TComboBox
     Left = 8
-    Height = 21
+    Height = 23
     Top = 24
     Width = 160
-    ItemHeight = 13
+    ItemHeight = 15
     OnChange = RowFieldCBChange
     Style = csDropDownList
     TabOrder = 1
   end
   object ColFieldCB: TComboBox
     Left = 8
-    Height = 21
+    Height = 23
     Top = 200
     Width = 160
-    ItemHeight = 13
+    ItemHeight = 15
     OnChange = ColFieldCBChange
     Style = csDropDownList
     TabOrder = 3
@@ -51,17 +53,17 @@ object ViewForm: TViewForm
   end
   object LRowCB: TLabel
     Left = 8
-    Height = 13
+    Height = 15
     Top = 8
-    Width = 30
+    Width = 31
     Caption = 'Rows:'
     ParentColor = False
   end
   object LColCB: TLabel
     Left = 8
-    Height = 13
+    Height = 15
     Top = 184
-    Width = 44
+    Width = 51
     Caption = 'Columns:'
     ParentColor = False
   end

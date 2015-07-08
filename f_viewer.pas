@@ -243,6 +243,7 @@ begin
 
     SQLQuery.Next();
   end;
+  SQLQuery.Active := False;
 end;
 
 function TViewForm.CListFilter( CList: TCheckListBox; KeyName: String;
