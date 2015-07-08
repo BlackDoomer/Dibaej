@@ -44,6 +44,7 @@ type { General tables types ═════════════════�
 
       function GetColumnName( ColInf: TColumnInfo ): String;
       function GetColumnCaption( ColInf: TColumnInfo ): String;
+      function GetColumnKeyName( ColInf: TColumnInfo ): String;
     public
       constructor Create( AName, ACaption: String );
       procedure AddColumn( AKey: Boolean = True;
@@ -51,14 +52,18 @@ type { General tables types ═════════════════�
                            ADataType: TColumnDataType = DT_NUMERIC;
                            AWidth: Byte = 0; ARefTable: TTableInfo = nil;
                            AColKey: String = ''; ARefKey: String = 'ID' );
-      function GetSelectSQL( OnceCol: String = '' ): String;
+      function GetSelectSQL( OnceCol: String = '';
+                             OnlyRefs: Boolean = False;
+                             NoRefCol1: Integer = -1;
+                             NoRefCol2: Integer = -1 ): String;
       function GetInsertSQL(): String;
       function GetUpdateSQL(): String;
       function GetDeleteSQL(): String;
       function Columns( Index: Integer ): TColumnInfo;
       function ColumnName( Index: Integer ): String;
       function ColumnCaption( Index: Integer ): String;
-      procedure GetColumns( Strings: TStrings );
+      function ColumnKeyName( Index: Integer ): String;
+      procedure GetColumns( Strings: TStrings; RefOnly: Boolean = False );
 
       property Caption: String read FCaption;
       property ColumnsNum: Integer read FColumnsNum;
@@ -139,16 +144,28 @@ begin
   if ( ARefTable <> nil ) then FReferenced := True;
 end;
 
-function TTableInfo.GetSelectSQL( OnceCol: String = '' ): String;
+function TTableInfo.GetSelectSQL( OnceCol: String = '';
+                                  OnlyRefs: Boolean = False;
+                                  NoRefCol1: Integer = -1;
+                                  NoRefCol2: Integer = -1 ): String;
 var
+  i, noref : Integer;
   ColInf : TColumnInfo;
   ColNames, TableRefs : String;
 begin
   ColNames := '';
+  noref := 0;
   if ( OnceCol = '' ) then begin
-    for ColInf in FColumns do begin
-      if ( ColNames <> '' ) then ColNames += ', ';
-      ColNames += GetColumnName( ColInf );
+    for i := 0 to FColumnsNum-1 do begin
+      ColInf := FColumns[i];
+      if not OnlyRefs or ( ColInf.RefTable <> nil ) then begin
+        if ( ColNames <> '' ) then ColNames += ', ';
+        if ( i = NoRefCol1+noref ) or ( i = NoRefCol2+noref ) then
+          ColNames += GetColumnKeyName( ColInf )
+        else
+          ColNames += GetColumnName( ColInf );
+      end else
+        noref += 1;
     end;
   end else begin
     ColNames := ColumnName( FKeyColumn ) + ', ' + OnceCol;
@@ -162,7 +179,7 @@ begin
                    ' on ' + FName + '.' + ColInf.ColKey +
                    ' = ' + ColInf.RefTable.FName + '.' + ColInf.RefKey;
   end;
-  
+
   Result := 'select ' + ColNames + ' from ' + FName + TableRefs;
 end;
 
@@ -239,14 +256,24 @@ function TTableInfo.ColumnCaption( Index: Integer ): String;
    begin Result := GetColumnCaption( FColumns[Index] );
      end;
 
-//fills specified TStrings with columns captions
-procedure TTableInfo.GetColumns( Strings: TStrings );
+function TTableInfo.GetColumnKeyName( ColInf: TColumnInfo ): String;
+begin
+  Result := FName + '.' + ColInf.ColKey;
+end;
+
+function TTableInfo.ColumnKeyName( Index: Integer ): String;
+   begin Result := GetColumnKeyName( FColumns[Index] );
+     end;
+
+//fills specified TStrings with columns captions and their array numbers
+procedure TTableInfo.GetColumns( Strings: TStrings; RefOnly: Boolean = False );
 var
-  ColInf : TColumnInfo;
+  i : Integer;
 begin
   Strings.Clear();
-  for ColInf in FColumns do
-    Strings.Add( GetColumnCaption( ColInf ) );
+  for i := 0 to FColumnsNum-1 do
+    if not RefOnly or ( FColumns[i].RefTable <> nil ) then
+      Strings.AddObject( ColumnCaption(i), TObject( Integer(i) ) );
 end;
 
 { –=────────────────────────────────────────────────────────────────────────=– }

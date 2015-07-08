@@ -14,8 +14,6 @@ uses
 { –=────────────────────────────────────────────────────────────────────────=– }
 type { Editor form class ═════════════════════════════════════════════════════ }
 
-  { TEditForm }
-
   TEditForm = class( TForm )
   { interface controls }
     GridEdit       : TValueListEditor;
@@ -48,7 +46,7 @@ function ShowEditForm( TableID: Integer; Fields: TFields;
 
 implementation {═══════════════════════════════════════════════════════════════}
 
-uses f_table;
+uses f_table, common;
 
 var
   RowEdit: array[0..255] of TEditForm; //256 is good enough, haters gonna hate
@@ -115,32 +113,21 @@ var
   i : Integer;
   column : TColumnInfo;
 begin
-  if FEditing then Caption := 'ID ' + IntToStr( FRowID ) + ' - '
-              else Caption := 'Insert - ';
-  Caption := Caption + FTable.Caption;
+  if FEditing then Caption := 'ID ' + IntToStr( FRowID ) 
+              else Caption := 'Insert';
+  Caption := Caption + ' - ' + FTable.Caption;
 
   //setting editor grid more complexly
   GridEdit.ItemProps[ FTable.KeyColumn ].ReadOnly := True;
 
   for i := 0 to FTable.ColumnsNum-1 do begin
     column := FTable.Columns(i);
-    if ( column.RefTable <> nil ) then begin
-      
-      SQLQuery.Active := False;
-      SQLQuery.SQL.Text := column.RefTable.GetSelectSQL( column.Name );
-      SQLQuery.Active := True;
-
+    if ( column.RefTable <> nil ) then
       with GridEdit.ItemProps[i] do begin
         ReadOnly := True;
         EditStyle := esPickList;
-        while not SQLQuery.EOF do begin
-          PickList.AddObject( SQLQuery.Fields.Fields[1].AsString,
-            TObject( SQLQuery.Fields.Fields[0].AsInteger ) );
-          SQLQuery.Next();
-        end;
+        GetIDRelation( column.RefTable, column.Name, SQLQuery, PickList );
       end;
-      
-    end;
   end;
 
   GridEdit.Row := -1;
@@ -175,7 +162,7 @@ begin
         ind := TComboBox(Editor).ItemIndex;
         if (ind < 0) then //if something weren't selected, go out
           raise Exception.Create('Some values were not selected.');
-        param := IntToStr( Integer( ItemProps[i].PickList.Objects[ind] ) );
+        param := IntToStr( StrID( ItemProps[i].PickList, ind ) );
       end;
     end;
 

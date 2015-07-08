@@ -9,14 +9,17 @@ uses
   SysUtils, Classes,
   Menus, Forms, Controls, Dialogs, StdCtrls,
   SQLdb, IBConnection,
-  tables, f_table;
+  tables, f_table, f_viewer;
 
 { –=────────────────────────────────────────────────────────────────────────=– }
 type { Main form class ═══════════════════════════════════════════════════════ }
 
+  { TMainForm }
+
   TMainForm = class( TForm )
   { interface controls }
     MainMenu                : TMainMenu;
+      ViewerItem            : TMenuItem;
       TablesItem            : TMenuItem;
       AboutItem             : TMenuItem;
       ConnectItem           : TMenuItem;
@@ -29,6 +32,7 @@ type { Main form class ═══════════════════
     procedure FormCreate( Sender: TObject );
 
     procedure ConnectItemClick( Sender: TObject );
+    procedure ViewerItemClick( Sender: TObject );
     procedure AboutItemClick( Sender: TObject );
     procedure TableItemClick( Sender: TObject );
 
@@ -67,7 +71,8 @@ begin
   Application.OnException := @ReportError;
   Caption := Application.Title;
 
-  IBConnection.LogEvents := LogAllEvents - [detFetch]; //because Lazarus don's save this. it's bug.
+  IBConnection.LogEvents := LogAllEvents - [detCustom, detFetch, detPrepare];
+     //because Lazarus don's save this. it's bug.
 
   //registering all tables from corresponding unit in menu
   for i := 0 to High(RegTable) do begin
@@ -100,6 +105,11 @@ begin
   end;
 
   IBConnection.Open();
+end;
+
+procedure TMainForm.ViewerItemClick( Sender: TObject );
+begin
+  ShowViewerForm( IBConnection );
 end;
 
 procedure TMainForm.AboutItemClick( Sender: TObject );

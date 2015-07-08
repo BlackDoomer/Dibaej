@@ -1,0 +1,121 @@
+object ViewForm: TViewForm
+  Left = 373
+  Height = 600
+  Top = 116
+  Width = 800
+  Caption = 'Timetable viewer'
+  ClientHeight = 600
+  ClientWidth = 800
+  OnClose = FormClose
+  OnShow = FormShow
+  Position = poDesktopCenter
+  ShowInTaskBar = stNever
+  LCLVersion = '1.2.6.0'
+  object FieldsCList: TCheckListBox
+    Left = 8
+    Height = 192
+    Top = 392
+    Width = 160
+    ExtendedSelect = False
+    ItemHeight = 0
+    TabOrder = 0
+  end
+  object RowFieldCB: TComboBox
+    Left = 8
+    Height = 21
+    Top = 24
+    Width = 160
+    ItemHeight = 13
+    OnChange = RowFieldCBChange
+    Style = csDropDownList
+    TabOrder = 1
+  end
+  object ColFieldCB: TComboBox
+    Left = 8
+    Height = 21
+    Top = 200
+    Width = 160
+    ItemHeight = 13
+    OnChange = ColFieldCBChange
+    Style = csDropDownList
+    TabOrder = 3
+  end
+  object BuildBtn: TButton
+    Left = 88
+    Height = 25
+    Top = 360
+    Width = 75
+    Caption = 'Build'
+    OnClick = BuildBtnClick
+    TabOrder = 5
+  end
+  object LRowCB: TLabel
+    Left = 8
+    Height = 13
+    Top = 8
+    Width = 30
+    Caption = 'Rows:'
+    ParentColor = False
+  end
+  object LColCB: TLabel
+    Left = 8
+    Height = 13
+    Top = 184
+    Width = 44
+    Caption = 'Columns:'
+    ParentColor = False
+  end
+  object RowValsCList: TCheckListBox
+    Left = 8
+    Height = 128
+    Top = 48
+    Width = 160
+    ExtendedSelect = False
+    ItemHeight = 0
+    TabOrder = 2
+  end
+  object ColValsCList: TCheckListBox
+    Left = 8
+    Height = 128
+    Top = 224
+    Width = 160
+    ExtendedSelect = False
+    ItemHeight = 0
+    TabOrder = 4
+  end
+  object ViewSGrid: TStringGrid
+    Left = 176
+    Height = 584
+    Top = 8
+    Width = 616
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ColCount = 2
+    DefaultColWidth = 256
+    DefaultRowHeight = 21
+    ExtendedSelect = False
+    Flat = True
+    MouseWheelOption = mwGrid
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goThumbTracking, goSmoothScroll]
+    RowCount = 2
+    TabOrder = 6
+    OnDrawCell = ViewSGridDrawCell
+  end
+  object SQLQuery: TSQLQuery
+    FieldDefs = <>
+    Transaction = SQLTransaction
+    Params = <>
+    left = 280
+    top = 72
+  end
+  object SQLTransaction: TSQLTransaction
+    Active = False
+    Action = caNone
+    left = 208
+    top = 72
+  end
+  object DataSource: TDataSource
+    DataSet = SQLQuery
+    left = 344
+    top = 72
+  end
+end

@@ -32,6 +32,10 @@ object MainForm: TMainForm
   object MainMenu: TMainMenu
     left = 240
     top = 16
+    object ViewerItem: TMenuItem
+      Caption = 'Viewer'
+      OnClick = ViewerItemClick
+    end
     object TablesItem: TMenuItem
       Caption = 'Tables'
     end
